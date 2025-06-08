@@ -1,0 +1,32 @@
+{
+  "name": "server",
+  "author": "nikhilsahu07",
+  "description": "An authentication universe with all modern options in mern",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "nodemon index.js"
+  },
+  "keywords": [
+    "auth",
+    "typescript",
+    "mern",
+    "eslint",
+    "prettier",
+    "mongodb",
+    "mongoose",
+    "jwt",
+    "bcrypt",
+    "passport",
+    "passport-jwt",
+    "passport-local",
+    "nodejs",
+    "express",
+    "resend",
+    "gmailSMTP",
+    "nodemailer"
+  ],
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {}
+}
