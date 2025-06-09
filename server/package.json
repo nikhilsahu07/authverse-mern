@@ -4,8 +4,14 @@
   "description": "An authentication universe with all modern options in mern",
   "version": "1.0.0",
   "main": "index.js",
+  "type": "module",
   "scripts": {
-    "start": "nodemon index.js"
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "lint": "eslint --ext .ts",
+    "lint:fix": "eslint --ext .ts --fix",
+    "format": "prettier --write 'src/**/*.{ts,js,json}'"
   },
   "keywords": [
     "auth",
@@ -27,6 +33,15 @@
     "nodemailer"
   ],
   "license": "ISC",
-  "type": "commonjs",
-  "dependencies": {}
+  "devDependencies": {
+    "@eslint/js": "^9.28.0",
+    "eslint": "^9.28.0",
+    "eslint-config-prettier": "^10.1.5",
+    "eslint-plugin-prettier": "^5.4.1",
+    "globals": "^16.2.0",
+    "prettier": "^3.5.3",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.33.1"
+  }
 }
