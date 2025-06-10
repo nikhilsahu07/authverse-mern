@@ -57,8 +57,7 @@ export default tseslint.config(
     },
     rules: {
       // Prettier integration
-      'prettier/prettier': 'error',
-
+      'prettier/prettier': 'off',
       // React specific rules
       ...eslintPluginReact.configs.recommended.rules,
       'react/prop-types': 'off',
