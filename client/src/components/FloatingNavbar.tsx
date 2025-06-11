@@ -1,8 +1,10 @@
 import { ChevronDown } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const FloatingNavbar = () => {
+  const { user } = useAuth();
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [showSolutions, setShowSolutions] = useState(false);
@@ -214,10 +216,10 @@ const FloatingNavbar = () => {
 
           {/* CTA Button */}
           <Link
-            to="/signup"
+            to={user ? '/dashboard' : '/signup'}
             className="bg-gradient-to-r from-indigo-500 to-blue-500 text-white px-6 py-2.5 rounded-full hover:from-indigo-600 hover:to-blue-600 transition-all duration-300 font-medium shadow-lg hover:shadow-xl text-base hover:scale-105"
           >
-            Try for free →
+            {user ? 'Dashboard  →' : 'Try for free →'}
           </Link>
         </div>
       </div>

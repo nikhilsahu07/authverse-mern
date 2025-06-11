@@ -15,6 +15,7 @@ import {
   Users,
   X,
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const Sidebar = () => {
   const navigate = useNavigate();
@@ -22,9 +23,9 @@ const Sidebar = () => {
   const [securityOpen, setSecurityOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
-
+  const { user, logout } = useAuth();
   const handleLogout = () => {
-    // TODO: Implement logout logic
+    logout();
     navigate('/');
   };
 
@@ -104,7 +105,9 @@ const Sidebar = () => {
             }`}
           >
             <div className="text-white font-medium text-sm">Welcome back!</div>
-            <div className="text-blue-100/70 text-xs">John Anderson</div>
+            <div className="text-blue-100/70 text-xs">
+              {user?.firstName} {user?.lastName}
+            </div>
           </div>
         </div>
       </div>
