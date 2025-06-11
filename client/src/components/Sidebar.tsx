@@ -52,55 +52,43 @@ const Sidebar = () => {
     >
       {/* Header */}
       <div
-        className={`${isCollapsed ? 'p-3' : 'p-4'} border-b border-slate-800 transition-all duration-500 ease-in-out`}
+        onClick={() => navigate('/')}
+        className={`${isCollapsed ? 'p-3' : 'p-4'} border-b border-slate-800 transition-all duration-500 ease-in-out cursor-pointer`}
       >
-        {isCollapsed ? (
-          // Collapsed layout - center logo and stack menu button below
-          <div className="flex flex-col space-y-3 items-center">
-            <Link to="/" className="flex justify-center hover:opacity-80 transition-opacity duration-300">
-              <img
-                src="/src/assets/authverse.png"
-                alt="AuthVerse"
-                className="w-8 h-8 object-contain transition-all duration-300"
-              />
-            </Link>
-            <button
-              onClick={() => setIsCollapsed(!isCollapsed)}
-              className="p-2 hover:bg-slate-800 rounded-lg transition-all duration-300 ease-in-out flex items-center justify-center hover:scale-110"
-            >
-              <div className="transition-transform duration-300 ease-in-out">
-                <Menu className="w-5 h-5" />
-              </div>
-            </button>
-          </div>
-        ) : (
-          // Expanded layout - logo on left, menu button on right
-          <div className="flex items-center justify-between">
-            <Link to="/" className="flex items-center space-x-3 hover:opacity-80 transition-opacity duration-300">
-              <img
-                src="/src/assets/authverse.png"
-                alt="AuthVerse"
-                className="w-8 h-8 object-contain transition-all duration-300"
-              />
-              <span className="text-xl font-semibold">AuthVerse</span>
-            </Link>
-            <button
-              onClick={() => setIsCollapsed(!isCollapsed)}
-              className="p-2 hover:bg-slate-800 rounded-lg transition-all duration-300 ease-in-out flex items-center justify-center hover:scale-110"
-            >
-              <div className="transition-transform duration-300 ease-in-out">
-                <X className="w-5 h-5" />
-              </div>
-            </button>
-          </div>
-        )}
+        <div className={`flex ${isCollapsed ? 'flex-col space-y-3 items-center' : 'items-center justify-between'}`}>
+          <Link
+            to="/"
+            className={`flex ${isCollapsed ? 'justify-center' : 'items-center space-x-3'} hover:opacity-80 transition-opacity duration-300`}
+            onClick={(e) => e.stopPropagation()} // Prevent triggering parent onClick
+          >
+            <img
+              src="/src/assets/authverse.png"
+              alt="AuthVerse"
+              className="w-8 h-8 object-contain transition-all duration-300"
+            />
+            {!isCollapsed && <span className="text-xl font-semibold">AuthVerse</span>}
+          </Link>
+
+          <button
+            onClick={(e) => {
+              e.stopPropagation(); // Prevent triggering parent onClick
+              setIsCollapsed(!isCollapsed);
+            }}
+            className="p-2 hover:bg-slate-800 rounded-lg transition-all duration-300 ease-in-out flex items-center justify-center hover:scale-110"
+          >
+            <div className="transition-transform duration-300 ease-in-out">
+              {isCollapsed ? <Menu className="w-5 h-5" /> : <X className="w-5 h-5" />}
+            </div>
+          </button>
+        </div>
       </div>
 
       {/* Welcome Section */}
       <div
+        onClick={() => navigate('/profile')}
         className={`${
           isCollapsed ? 'p-2' : 'p-4'
-        } border-b border-slate-800/50 transition-all duration-500 ease-in-out`}
+        } border-b border-slate-800/50 transition-all duration-500 ease-in-out cursor-pointer`}
       >
         <div
           className={`flex items-center ${
@@ -122,8 +110,10 @@ const Sidebar = () => {
       </div>
 
       {/* Main Menu */}
-      <div className={`flex-1 ${isCollapsed ? 'p-2' : 'p-4'} transition-all duration-500 ease-in-out`}>
-        <div className="mb-6">
+      <div
+        className={`flex-1 ${isCollapsed ? 'p-2' : 'p-4'} transition-all duration-500 ease-in-out overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-slate-700/50 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-transparent [&::-webkit-scrollbar-thumb]:bg-clip-padding hover:[&::-webkit-scrollbar-thumb]:bg-slate-600/70 [&::-webkit-scrollbar-thumb]:transition-colors [&::-webkit-scrollbar-thumb]:duration-200`}
+      >
+        <div className="mb-6 pr-1">
           <div
             className={`transition-all duration-500 ease-in-out ${
               isCollapsed ? 'opacity-0 h-0 mb-0 overflow-hidden' : 'opacity-100 h-auto mb-3'

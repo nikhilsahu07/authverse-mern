@@ -66,7 +66,7 @@ const FloatingNavbar = () => {
         isVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'
       }`}
     >
-      <div className="bg-slate-800/95 backdrop-blur-xl rounded-full shadow-2xl border border-slate-700/50 px-8 py-3 min-w-[1000px]">
+      <div className="bg-slate-800/95 backdrop-blur-xl rounded-full shadow-2xl border border-slate-700/50 px-8 py-2 min-w-[1000px]">
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-3 text-blue-300 hover:text-blue-200 transition-colors">
@@ -89,11 +89,11 @@ const FloatingNavbar = () => {
                 />
               </button>
               {showSolutions && (
-                <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-3 w-[600px] bg-slate-700/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-600/50 py-8 px-8 transition-all duration-200 ease-out">
-                  <div className="grid grid-cols-3 gap-8">
+                <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-3 w-[600px] bg-slate-700/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-600/50 py-5 px-5 transition-all duration-200 ease-out">
+                  <div className="grid grid-cols-3 gap-5">
                     {/* Product Section */}
                     <div>
-                      <h3 className="font-semibold text-blue-100 text-base mb-4">Product</h3>
+                      <h3 className="font-semibold text-blue-300 text-base mb-4">Product</h3>
                       <div className="space-y-3">
                         <a href="#" className="block text-blue-200/70 hover:text-blue-200 transition-colors text-sm">
                           Use cases
@@ -112,7 +112,7 @@ const FloatingNavbar = () => {
 
                     {/* About Section */}
                     <div>
-                      <h3 className="font-semibold text-blue-100 text-base mb-4">About</h3>
+                      <h3 className="font-semibold text-blue-300 text-base mb-4">About</h3>
                       <div className="space-y-3">
                         <a href="#" className="block text-blue-200/70 hover:text-blue-200 transition-colors text-sm">
                           Company
@@ -154,11 +154,11 @@ const FloatingNavbar = () => {
                 />
               </button>
               {showResources && (
-                <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-3 w-[500px] bg-slate-700/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-600/50 py-8 px-8 transition-all duration-200 ease-out">
-                  <div className="grid grid-cols-2 gap-8">
+                <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-3 w-[500px] bg-slate-700/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-600/50 py-5 px-5 transition-all duration-200 ease-out">
+                  <div className="grid grid-cols-2 gap-5">
                     {/* Learn Section */}
                     <div>
-                      <h3 className="font-semibold text-blue-100 text-base mb-4">Learn</h3>
+                      <h3 className="font-semibold text-blue-300 text-base mb-4">Learn</h3>
                       <div className="space-y-3">
                         <a href="#" className="block text-blue-200/70 hover:text-blue-200 transition-colors text-sm">
                           Blog
@@ -180,7 +180,7 @@ const FloatingNavbar = () => {
 
                     {/* Support Section */}
                     <div>
-                      <h3 className="font-semibold text-blue-100 text-base mb-4">Support</h3>
+                      <h3 className="font-semibold text-blue-300 text-base mb-4">Support</h3>
                       <div className="space-y-3">
                         <a href="#" className="block text-blue-200/70 hover:text-blue-200 transition-colors text-sm">
                           Documentation
