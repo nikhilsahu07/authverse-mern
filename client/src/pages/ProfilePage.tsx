@@ -36,8 +36,7 @@ const ProfilePage: React.FC = () => {
       await updateProfile(data);
       setIsEditingProfile(false);
     } catch (error) {
-      console.error('Profile update error:', error);
-    } finally {
+      // Error is handled by the auth context (toast)
       setIsLoading(false);
     }
   };
@@ -49,8 +48,7 @@ const ProfilePage: React.FC = () => {
       setIsChangingPassword(false);
       passwordForm.reset();
     } catch (error) {
-      console.error('Password change error:', error);
-    } finally {
+      // Error is handled by the auth context (toast)
       setIsLoading(false);
     }
   };
@@ -59,7 +57,7 @@ const ProfilePage: React.FC = () => {
     try {
       await logout();
     } catch (error) {
-      console.error('Logout error:', error);
+      // Error is handled by the auth context (toast)
     }
   };
 

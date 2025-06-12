@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -34,8 +34,6 @@ const SignIn = () => {
       navigate(from, { replace: true });
     } catch (error) {
       // Error is handled by the auth context (toast)
-      console.error('Login error:', error);
-    } finally {
       setIsSubmitting(false);
     }
   };

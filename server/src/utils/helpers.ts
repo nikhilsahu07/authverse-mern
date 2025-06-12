@@ -30,7 +30,7 @@ export const createSuccessResponse = <T>(message: string, data?: T): ApiResponse
 /**
  * Create an error response
  */
-export const createErrorResponse = (message: string, error?: string): ApiResponse<any> => {
+export const createErrorResponse = (message: string, error?: string): ApiResponse<undefined> => {
   return createApiResponse(false, message, undefined, error);
 };
 

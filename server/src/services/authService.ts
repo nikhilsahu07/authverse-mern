@@ -94,14 +94,13 @@ export class AuthService {
     await this.saveRefreshToken(user._id.toString(), tokens.refreshToken.token);
 
     // Remove password from response and map to expected type
-    const typedUser = user as any; // Type assertion to access properties
     const userResponse = {
-      id: typedUser._id.toString(),
-      email: typedUser.email,
-      firstName: typedUser.firstName,
-      lastName: typedUser.lastName,
-      role: typedUser.role,
-      isEmailVerified: typedUser.isEmailVerified,
+      id: user._id.toString(),
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role,
+      isEmailVerified: user.isEmailVerified,
     };
 
     return {

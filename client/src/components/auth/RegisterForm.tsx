@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate } from 'react-router-dom';
@@ -53,8 +53,7 @@ const SignUp = () => {
       });
       navigate('/dashboard', { replace: true });
     } catch (error) {
-      console.error('Registration error:', error);
-    } finally {
+      // Error is handled by the auth context (toast)
       setIsSubmitting(false);
     }
   };

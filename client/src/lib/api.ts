@@ -1,5 +1,5 @@
 import axios, { AxiosError } from 'axios';
-import type { AxiosResponse } from 'axios';
+import type { AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
 
@@ -82,7 +82,10 @@ api.interceptors.response.use(
     return response;
   },
   async (error: AxiosError) => {
-    const originalRequest = error.config as any;
+    type RetryableRequest = InternalAxiosRequestConfig & {
+      _retry?: boolean;
+    };
+    const originalRequest = error.config as RetryableRequest;
 
     if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
       originalRequest._retry = true;
@@ -125,7 +128,7 @@ api.interceptors.response.use(
 );
 
 // API Response types
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   message: string;
   data?: T;

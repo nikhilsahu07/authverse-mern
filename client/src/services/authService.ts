@@ -18,7 +18,10 @@ export class AuthService {
     try {
       const response = await api.post<ApiResponse<RegisterResponse>>('/auth/register', userData);
 
-      const { user, tokens } = response.data.data!;
+      const { user, tokens } = response.data.data ?? { user: null, tokens: null };
+      if (!user || !tokens) {
+        throw new Error('Invalid response from server');
+      }
 
       // Store tokens in cookies
       tokenUtils.setTokens(tokens.accessToken, tokens.refreshToken);
@@ -36,7 +39,10 @@ export class AuthService {
     try {
       const response = await api.post<ApiResponse<LoginResponse>>('/auth/login', credentials);
 
-      const { user, tokens } = response.data.data!;
+      const { user, tokens } = response.data.data ?? { user: null, tokens: null };
+      if (!user || !tokens) {
+        throw new Error('Invalid response from server');
+      }
 
       // Store tokens in cookies
       tokenUtils.setTokens(tokens.accessToken, tokens.refreshToken);
@@ -86,7 +92,11 @@ export class AuthService {
   static async getProfile(): Promise<User> {
     try {
       const response = await api.get<ApiResponse<User>>('/auth/profile');
-      return response.data.data!;
+      const user = response.data.data;
+      if (!user) {
+        throw new Error('Invalid response from server');
+      }
+      return user;
     } catch (error) {
       throw new Error(handleApiError(error));
     }
@@ -98,7 +108,11 @@ export class AuthService {
   static async updateProfile(profileData: UpdateProfileRequest): Promise<User> {
     try {
       const response = await api.put<ApiResponse<User>>('/auth/profile', profileData);
-      return response.data.data!;
+      const user = response.data.data;
+      if (!user) {
+        throw new Error('Invalid response from server');
+      }
+      return user;
     } catch (error) {
       throw new Error(handleApiError(error));
     }
@@ -131,7 +145,10 @@ export class AuthService {
         { refreshToken },
       );
 
-      const tokens = response.data.data!;
+      const tokens = response.data.data;
+      if (!tokens) {
+        throw new Error('Invalid response from server');
+      }
 
       // Update tokens in cookies
       tokenUtils.setTokens(tokens.accessToken, tokens.refreshToken);

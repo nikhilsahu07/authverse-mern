@@ -1,4 +1,4 @@
-import React, { ReactNode, createContext, useContext, useEffect, useState } from 'react';
+import React, { type ReactNode, createContext, useContext, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { AuthService } from '../services/authService';
 import { tokenUtils } from '../lib/api';
@@ -49,7 +49,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     } catch (error) {
       // Error fetching profile, clear auth state
-      console.error('Auth initialization error:', error);
       setUser(null);
       setIsAuthenticated(false);
       tokenUtils.clearTokens();
@@ -107,7 +106,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       toast.success('Logged out successfully');
     } catch (error) {
-      console.error('Logout error:', error);
       // Even if logout API fails, clear local state
       setUser(null);
       setIsAuthenticated(false);
@@ -159,7 +157,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUser(userProfile);
       }
     } catch (error) {
-      console.error('Error refreshing user:', error);
       // If refresh fails, user might be logged out
       setUser(null);
       setIsAuthenticated(false);

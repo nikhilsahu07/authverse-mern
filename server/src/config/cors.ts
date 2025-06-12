@@ -12,7 +12,8 @@ const corsOptions: cors.CorsOptions = {
 
     // Allow requests with no origin (like mobile apps or curl requests) in development
     if (isDevelopment() && !origin) {
-      callback(null, true); return;
+      callback(null, true);
+      return;
     }
 
     if (allowedOrigins.includes(origin as string) || isDevelopment()) {

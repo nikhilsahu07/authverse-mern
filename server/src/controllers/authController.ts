@@ -3,6 +3,13 @@ import { AuthService } from '../services/authService.js';
 import { createSuccessResponse } from '../utils/helpers.js';
 import { HTTP_STATUS, SUCCESS_MESSAGES } from '../utils/constants.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
+import type { IUserDocument } from '../models/User.js';
+
+// Extend Express Request type to include user
+interface AuthenticatedRequest extends Request {
+  user?: IUserDocument;
+  userId?: string;
+}
 
 export class AuthController {
   static register = asyncHandler(async (req: Request, res: Response): Promise<void> => {
@@ -81,30 +88,30 @@ export class AuthController {
   });
 
   static getProfile = asyncHandler((req: Request, res: Response): void => {
-    const { user } = req;
+    const authReq = req as AuthenticatedRequest;
+    const { user } = authReq;
     if (!user) {
       res.status(HTTP_STATUS.UNAUTHORIZED).json(createSuccessResponse(SUCCESS_MESSAGES.LOGOUT_SUCCESS));
       return;
     }
 
-    const typedUser = user as any; // Type assertion to access toJSON method
-    res.status(HTTP_STATUS.OK).json(createSuccessResponse('Profile retrieved successfully', typedUser.toJSON()));
+    res.status(HTTP_STATUS.OK).json(createSuccessResponse('Profile retrieved successfully', user.toJSON()));
   });
 
   static updateProfile = asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const { firstName, lastName } = req.body;
-    const { user } = req;
+    const authReq = req as AuthenticatedRequest;
+    const { user } = authReq;
     if (!user) {
       res.status(HTTP_STATUS.UNAUTHORIZED).json(createSuccessResponse(SUCCESS_MESSAGES.LOGOUT_SUCCESS));
       return;
     }
 
-    const typedUser = user as any; // Type assertion to access properties and methods
-    if (firstName) typedUser.firstName = firstName;
-    if (lastName) typedUser.lastName = lastName;
+    if (firstName) user.firstName = firstName;
+    if (lastName) user.lastName = lastName;
 
-    await typedUser.save();
+    await user.save();
 
-    res.status(HTTP_STATUS.OK).json(createSuccessResponse(SUCCESS_MESSAGES.PROFILE_UPDATED, typedUser.toJSON()));
+    res.status(HTTP_STATUS.OK).json(createSuccessResponse(SUCCESS_MESSAGES.PROFILE_UPDATED, user.toJSON()));
   });
 }

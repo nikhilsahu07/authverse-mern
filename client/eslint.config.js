@@ -72,8 +72,8 @@ export default tseslint.config(
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'warn',
 
-      // React Refresh
-      'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
+      // React Refresh - Allow non-component exports in development
+      'react-refresh/only-export-components': 'off',
 
       // TypeScript specific (without project service)
       '@typescript-eslint/no-unused-vars': [
@@ -92,7 +92,7 @@ export default tseslint.config(
 
       // General rules
       'no-undef': 'off',
-      'no-console': 'warn',
+      'no-console': ['warn', { allow: ['warn', 'error'] }], // Allow console.warn and console.error
       'no-debugger': 'warn',
       'prefer-const': 'error',
       'no-var': 'error',

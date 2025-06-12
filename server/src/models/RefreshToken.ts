@@ -42,7 +42,7 @@ const refreshTokenSchema = new Schema<IRefreshToken>(
   {
     timestamps: true,
     toJSON: {
-      transform(_doc: unknown, ret: Record<string, any>): void {
+      transform(_doc: unknown, ret: Record<string, unknown>): void {
         ret['id'] = ret['_id'];
         delete ret['_id'];
         delete ret['__v'];
