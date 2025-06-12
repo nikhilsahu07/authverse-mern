@@ -12,7 +12,7 @@
 
     /* Language and Environment */
     "target": "ES2022" /* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */,
-    "lib": ["ES2022"],
+    "lib": ["ES2022", "DOM"],
     // "jsx": "preserve",                                /* Specify what JSX code is generated. */
     // "libReplacement": true,                           /* Enable lib replacement. */
     // "experimentalDecorators": true,                   /* Enable experimental support for legacy experimental decorators. */

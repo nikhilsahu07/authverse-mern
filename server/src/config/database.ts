@@ -9,6 +9,9 @@ const dbOptions: mongoose.ConnectOptions = {
   serverSelectionTimeoutMS: 5000,
   socketTimeoutMS: 45000,
   bufferCommands: false,
+  autoIndex: true,
+  autoCreate: true,
+  family: 4,
 };
 
 /**
