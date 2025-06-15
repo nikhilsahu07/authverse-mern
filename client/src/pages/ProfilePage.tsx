@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Calendar, Edit2, Eye, EyeOff, LogOut, Mail, Save, Shield, User, X } from 'lucide-react';
+import { ArrowLeft, Calendar, Edit2, Eye, EyeOff, LogOut, Mail, Save, Shield, User, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import type { ChangePasswordFormData, UpdateProfileFormData } from '../lib/validations';
 import { useAuth } from '../context/AuthContext';
 import { changePasswordSchema, updateProfileSchema } from '../lib/validations';
@@ -75,7 +76,36 @@ const ProfilePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 py-6 sm:py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto">
-        {/* Header */}
+        {/* Navigation Header */}
+        <div className="bg-slate-800/60 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-2xl border border-slate-700/50 mb-4 sm:mb-6">
+          <div className="px-4 sm:px-6 py-4 sm:py-5">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-3 sm:space-y-0">
+              {/* Logo and Title */}
+              <Link to="/">
+                <div className="flex items-center space-x-3 sm:space-x-4">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12  rounded-full flex items-center justify-center shadow-lg">
+                    <img src="/authverse.png" alt="AuthVerse" className="w-6 h-6 sm:w-7 sm:h-7 object-contain" />
+                  </div>
+                  <div>
+                    <h1 className="text-lg sm:text-xl font-bold text-white">AuthVerse</h1>
+                    <p className="text-xs sm:text-sm text-blue-100/70">User Profile Settings</p>
+                  </div>
+                </div>
+              </Link>
+
+              {/* Back to Dashboard Button */}
+              <Link
+                to="/dashboard"
+                className="inline-flex items-center px-4 sm:px-5 py-2 sm:py-2.5 bg-gradient-to-r from-indigo-500 to-blue-500 hover:from-indigo-600 hover:to-blue-600 text-white rounded-xl font-medium text-sm transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 w-full sm:w-auto justify-center sm:justify-start"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Dashboard
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* Profile Header */}
         <div className="bg-slate-800/60 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-2xl border border-slate-700/50 mb-4 sm:mb-6">
           <div className="px-4 sm:px-6 py-6 sm:py-8">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-4 sm:space-y-0">
@@ -84,9 +114,9 @@ const ProfilePage: React.FC = () => {
                   <User className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-xl sm:text-2xl font-bold text-white">
+                  <h2 className="text-xl sm:text-2xl font-bold text-white">
                     {user.firstName} {user.lastName}
-                  </h1>
+                  </h2>
                   <p className="text-blue-100/70 text-sm sm:text-base">{user.email}</p>
                 </div>
               </div>
@@ -106,7 +136,7 @@ const ProfilePage: React.FC = () => {
           <div className="bg-slate-800/60 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-2xl border border-slate-700/50">
             <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-700/50">
               <div className="flex items-center justify-between">
-                <h2 className="text-base sm:text-lg font-medium text-white">Profile Information</h2>
+                <h3 className="text-base sm:text-lg font-medium text-white">Profile Information</h3>
                 {!isEditingProfile && (
                   <button
                     onClick={() => setIsEditingProfile(true)}
@@ -219,7 +249,7 @@ const ProfilePage: React.FC = () => {
           <div className="bg-slate-800/60 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-2xl border border-slate-700/50">
             <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-700/50">
               <div className="flex items-center justify-between">
-                <h2 className="text-base sm:text-lg font-medium text-white">Security Settings</h2>
+                <h3 className="text-base sm:text-lg font-medium text-white">Security Settings</h3>
                 {!isChangingPassword && (
                   <button
                     onClick={() => setIsChangingPassword(true)}
