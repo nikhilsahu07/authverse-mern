@@ -70,7 +70,7 @@ const SignUp = () => {
                 to="/"
                 className="inline-flex items-center space-x-2 text-blue-300 hover:text-blue-200 transition-colors mb-5"
               >
-                <img src="/src/assets/authverse.png" alt="AuthVerse" className="w-7 h-7 object-contain" />
+                <img src="/authverse.png" alt="AuthVerse" className="w-7 h-7 object-contain" />
                 <span className="text-lg font-bold">AuthVerse</span>
               </Link>
 
