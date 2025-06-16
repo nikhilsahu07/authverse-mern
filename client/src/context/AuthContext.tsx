@@ -47,7 +47,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setIsAuthenticated(false);
         tokenUtils.clearTokens();
       }
-    } catch (error) {
+    } catch (_error) {
       // Error fetching profile, clear auth state
       setUser(null);
       setIsAuthenticated(false);
@@ -105,7 +105,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsAuthenticated(false);
 
       toast.success('Logged out successfully');
-    } catch (error) {
+    } catch (_error) {
       // Even if logout API fails, clear local state
       setUser(null);
       setIsAuthenticated(false);
@@ -150,13 +150,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const updateProfileImage = async (imageData: string): Promise<void> => {
+    try {
+      setIsLoading(true);
+
+      const updatedUser = await AuthService.updateProfileImage(imageData);
+      setUser(updatedUser);
+
+      toast.success('Profile picture updated successfully');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Profile picture update failed';
+      toast.error(errorMessage);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const refreshUser = async (): Promise<void> => {
     try {
       if (isAuthenticated) {
         const userProfile = await AuthService.getProfile();
         setUser(userProfile);
       }
-    } catch (error) {
+    } catch (_error) {
       // If refresh fails, user might be logged out
       setUser(null);
       setIsAuthenticated(false);
@@ -173,6 +190,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     logout,
     updateProfile,
     changePassword,
+    updateProfileImage,
     refreshUser,
   };
 

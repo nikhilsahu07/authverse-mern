@@ -54,6 +54,18 @@ const userSchema = new Schema<IUserDocument>(
       enum: Object.values(USER_ROLES),
       default: USER_ROLES.USER,
     },
+    profileImage: {
+      type: String,
+      default: undefined,
+      validate: {
+        validator(v: string): boolean {
+          // Validate base64 image format if provided
+          if (!v) return true;
+          return /^data:image\/(png|jpg|jpeg|gif|webp);base64,/.test(v);
+        },
+        message: 'Profile image must be a valid base64 encoded image',
+      },
+    },
     isEmailVerified: {
       type: Boolean,
       default: false,

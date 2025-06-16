@@ -32,7 +32,7 @@ const SignIn = () => {
       setIsSubmitting(true);
       await login(data);
       navigate(from, { replace: true });
-    } catch (error) {
+    } catch (_error) {
       // Error is handled by the auth context (toast)
       setIsSubmitting(false);
     }

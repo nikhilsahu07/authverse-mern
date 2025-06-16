@@ -1,7 +1,22 @@
-import React, { useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ArrowLeft, Calendar, Edit2, Eye, EyeOff, LogOut, Mail, Save, Shield, User, X } from 'lucide-react';
+import {
+  ArrowLeft,
+  Calendar,
+  Camera,
+  Crop,
+  Edit2,
+  Eye,
+  EyeOff,
+  LogOut,
+  Mail,
+  Save,
+  Shield,
+  Upload,
+  User,
+  X,
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { ChangePasswordFormData, UpdateProfileFormData } from '../lib/validations';
 import { useAuth } from '../context/AuthContext';
@@ -9,13 +24,28 @@ import { changePasswordSchema, updateProfileSchema } from '../lib/validations';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 
 const ProfilePage: React.FC = () => {
-  const { user, logout, updateProfile, changePassword } = useAuth();
+  const { user, logout, updateProfile, changePassword, updateProfileImage } = useAuth();
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Profile image states
+  const [profileImage, setProfileImage] = useState<string | null>(user?.profileImage || null);
+
+  // Update profile image when user changes
+  React.useEffect(() => {
+    setProfileImage(user?.profileImage || null);
+  }, [user?.profileImage]);
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [crop, setCrop] = useState({ x: 50, y: 50, size: 200 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [imageRef, setImageRef] = useState<HTMLImageElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // Profile form
   const profileForm = useForm<UpdateProfileFormData>({
@@ -36,7 +66,7 @@ const ProfilePage: React.FC = () => {
       setIsLoading(true);
       await updateProfile(data);
       setIsEditingProfile(false);
-    } catch (error) {
+    } catch (_error) {
       // Error is handled by the auth context (toast)
       setIsLoading(false);
     }
@@ -48,7 +78,7 @@ const ProfilePage: React.FC = () => {
       await changePassword(data);
       setIsChangingPassword(false);
       passwordForm.reset();
-    } catch (error) {
+    } catch (_error) {
       // Error is handled by the auth context (toast)
       setIsLoading(false);
     }
@@ -57,10 +87,109 @@ const ProfilePage: React.FC = () => {
   const handleLogout = async () => {
     try {
       await logout();
-    } catch (error) {
+    } catch (_error) {
       // Error is handled by the auth context (toast)
     }
   };
+
+  // Image handling functions
+  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setSelectedImage(e.target?.result as string);
+        setCrop({ x: 50, y: 50, size: 364 }); // Reset crop area for new image
+        setShowImageModal(true);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setSelectedImage(e.target?.result as string);
+        setCrop({ x: 50, y: 50, size: 200 }); // Reset crop area for new image
+        setShowImageModal(true);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const cropImage = useCallback(async () => {
+    if (!selectedImage || !canvasRef.current || !imageRef) return;
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+
+    img.onload = async () => {
+      // Set canvas size to desired output size
+      const outputSize = 200;
+      canvas.width = outputSize;
+      canvas.height = outputSize;
+
+      // Get the displayed image dimensions
+      const displayWidth = imageRef.clientWidth;
+      const displayHeight = imageRef.clientHeight;
+
+      // Calculate the scale factors between displayed and actual image
+      const scaleX = img.width / displayWidth;
+      const scaleY = img.height / displayHeight;
+
+      // Convert crop coordinates from display to actual image coordinates
+      const actualCropX = crop.x * scaleX;
+      const actualCropY = crop.y * scaleY;
+      const actualCropSize = crop.size * Math.min(scaleX, scaleY);
+
+      // Ensure crop area doesn't exceed image boundaries
+      const finalX = Math.max(0, Math.min(actualCropX, img.width - actualCropSize));
+      const finalY = Math.max(0, Math.min(actualCropY, img.height - actualCropSize));
+      const finalSize = Math.min(actualCropSize, img.width - finalX, img.height - finalY);
+
+      // Draw the cropped image to canvas
+      ctx?.drawImage(
+        img,
+        finalX,
+        finalY,
+        finalSize,
+        finalSize, // Source rectangle (crop area from actual image)
+        0,
+        0,
+        outputSize,
+        outputSize, // Destination rectangle (full canvas)
+      );
+
+      const croppedImageUrl = canvas.toDataURL('image/jpeg', 0.9);
+      setProfileImage(croppedImageUrl);
+      setShowImageModal(false);
+      setSelectedImage(null);
+
+      // Update the profile image in the auth context
+      try {
+        await updateProfileImage(croppedImageUrl);
+      } catch (_error) {
+        // Error is handled by the auth context (toast)
+      }
+    };
+
+    img.src = selectedImage;
+  }, [selectedImage, crop, imageRef, updateProfileImage]);
 
   if (!user) {
     return (
@@ -83,7 +212,7 @@ const ProfilePage: React.FC = () => {
               {/* Logo and Title */}
               <Link to="/">
                 <div className="flex items-center space-x-3 sm:space-x-4">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12  rounded-full flex items-center justify-center shadow-lg">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center shadow-lg">
                     <img src="/authverse.png" alt="AuthVerse" className="w-6 h-6 sm:w-7 sm:h-7 object-contain" />
                   </div>
                   <div>
@@ -110,9 +239,27 @@ const ProfilePage: React.FC = () => {
           <div className="px-4 sm:px-6 py-6 sm:py-8">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-4 sm:space-y-0">
               <div className="flex items-center space-x-3 sm:space-x-4">
-                <div className="h-12 w-12 sm:h-16 sm:w-16 bg-gradient-to-br from-indigo-500 to-blue-500 rounded-full flex items-center justify-center">
-                  <User className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
+                {/* Profile Picture */}
+                <div className="relative">
+                  {profileImage ? (
+                    <img
+                      src={profileImage}
+                      alt="Profile"
+                      className="h-12 w-12 sm:h-16 sm:w-16 rounded-full object-cover ring-2 ring-indigo-500/50"
+                    />
+                  ) : (
+                    <div className="h-12 w-12 sm:h-16 sm:w-16 bg-gradient-to-br from-indigo-500 to-blue-500 rounded-full flex items-center justify-center">
+                      <User className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
+                    </div>
+                  )}
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="absolute -bottom-0.5 -right-0.5 p-1 bg-indigo-500 hover:bg-indigo-600 text-white rounded-full shadow-lg transition-colors sm:p-1.5"
+                  >
+                    <Camera className="h-2.5 w-2.5 sm:h-4 sm:w-4" />
+                  </button>
                 </div>
+
                 <div>
                   <h2 className="text-xl sm:text-2xl font-bold text-white">
                     {user.firstName} {user.lastName}
@@ -150,6 +297,44 @@ const ProfilePage: React.FC = () => {
             </div>
 
             <div className="px-4 sm:px-6 py-4">
+              {/* Profile Picture Upload Section */}
+              <div className="mb-6">
+                <label className="block text-blue-100/90 font-medium mb-3 text-sm">Profile Picture</label>
+                <div
+                  className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                    isDragging ? 'border-indigo-400 bg-indigo-500/10' : 'border-slate-600/50 hover:border-slate-500/50'
+                  }`}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                >
+                  <div className="flex flex-col items-center space-y-3">
+                    {profileImage ? (
+                      <img src={profileImage} alt="Profile preview" className="w-16 h-16 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-16 h-16 bg-slate-700/50 rounded-full flex items-center justify-center">
+                        <Upload className="w-6 h-6 text-blue-100/60" />
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-sm text-blue-100/70">
+                        Drag and drop an image here, or{' '}
+                        <button
+                          onClick={() => fileInputRef.current?.click()}
+                          className="text-indigo-400 hover:text-indigo-300 underline"
+                        >
+                          browse
+                        </button>
+                      </p>
+                      <p className="text-xs text-blue-100/50 mt-1">PNG, JPG up to 5MB</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Hidden file input */}
+              <input type="file" ref={fileInputRef} onChange={handleImageSelect} accept="image/*" className="hidden" />
+
               {isEditingProfile ? (
                 <form onSubmit={profileForm.handleSubmit(handleProfileUpdate)} className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -397,6 +582,187 @@ const ProfilePage: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Image Crop Modal */}
+        {showImageModal && selectedImage && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <div className="bg-slate-800 rounded-2xl shadow-2xl border border-slate-700/50 p-6 max-w-2xl w-full">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-white">Crop Profile Picture</h3>
+                <button
+                  onClick={() => {
+                    setShowImageModal(false);
+                    setSelectedImage(null);
+                    setCrop({ x: 50, y: 50, size: 200 });
+                  }}
+                  className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-blue-100/70" />
+                </button>
+              </div>
+
+              <div className="mb-6 bg-slate-900 rounded-lg overflow-hidden">
+                <div className="relative">
+                  <img
+                    ref={setImageRef}
+                    src={selectedImage}
+                    alt="Crop preview"
+                    className="w-full h-96 object-contain"
+                    draggable={false}
+                  />
+                  {/* Crop overlay */}
+                  <div
+                    className="absolute border-2 border-indigo-400 bg-indigo-400/20 cursor-move select-none"
+                    style={{
+                      left: `${crop.x}px`,
+                      top: `${crop.y}px`,
+                      width: `${crop.size}px`,
+                      height: `${crop.size}px`,
+                    }}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      const rect = e.currentTarget.parentElement?.getBoundingClientRect();
+                      if (!rect || !imageRef) return;
+
+                      const startX = e.clientX;
+                      const startY = e.clientY;
+                      const startCropX = crop.x;
+                      const startCropY = crop.y;
+
+                      const maxX = imageRef.clientWidth - crop.size;
+                      const maxY = imageRef.clientHeight - crop.size;
+
+                      const handleMouseMove = (e: MouseEvent) => {
+                        const deltaX = e.clientX - startX;
+                        const deltaY = e.clientY - startY;
+                        const newX = Math.max(0, Math.min(maxX, startCropX + deltaX));
+                        const newY = Math.max(0, Math.min(maxY, startCropY + deltaY));
+
+                        setCrop({
+                          ...crop,
+                          x: newX,
+                          y: newY,
+                        });
+                      };
+
+                      const handleMouseUp = () => {
+                        document.removeEventListener('mousemove', handleMouseMove);
+                        document.removeEventListener('mouseup', handleMouseUp);
+                      };
+
+                      document.addEventListener('mousemove', handleMouseMove);
+                      document.addEventListener('mouseup', handleMouseUp);
+                    }}
+                  >
+                    {/* Crop area border */}
+                    <div className="absolute inset-0 border border-white/50 pointer-events-none" />
+
+                    {/* Resize handle in bottom-right corner */}
+                    <div
+                      className="absolute bottom-0 right-0 w-4 h-4 bg-indigo-400 cursor-se-resize"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+
+                        if (!imageRef) return;
+
+                        const startSize = crop.size;
+                        const startX = e.clientX;
+                        const startY = e.clientY;
+
+                        const maxSize = Math.min(imageRef.clientWidth - crop.x, imageRef.clientHeight - crop.y);
+
+                        const handleMouseMove = (e: MouseEvent) => {
+                          const deltaX = e.clientX - startX;
+                          const deltaY = e.clientY - startY;
+                          const delta = Math.max(deltaX, deltaY);
+                          const newSize = Math.max(50, Math.min(maxSize, startSize + delta));
+
+                          setCrop({
+                            ...crop,
+                            size: newSize,
+                          });
+                        };
+
+                        const handleMouseUp = () => {
+                          document.removeEventListener('mousemove', handleMouseMove);
+                          document.removeEventListener('mouseup', handleMouseUp);
+                        };
+
+                        document.addEventListener('mousemove', handleMouseMove);
+                        document.addEventListener('mouseup', handleMouseUp);
+                      }}
+                    >
+                      <div className="w-full h-full bg-white/20 border border-white/50" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-blue-100/90 mb-2">Crop Size</label>
+                <input
+                  type="range"
+                  min="50"
+                  max={imageRef ? Math.min(imageRef.clientWidth, imageRef.clientHeight) : 300}
+                  value={crop.size}
+                  onChange={(e) => {
+                    const newSize = parseInt(e.target.value);
+                    const maxX = imageRef ? imageRef.clientWidth - newSize : 0;
+                    const maxY = imageRef ? imageRef.clientHeight - newSize : 0;
+
+                    setCrop({
+                      ...crop,
+                      size: newSize,
+                      x: Math.min(crop.x, maxX),
+                      y: Math.min(crop.y, maxY),
+                    });
+                  }}
+                  className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
+                  style={{
+                    background: `linear-gradient(to right, #6366f1 0%, #6366f1 ${imageRef ? ((crop.size - 50) / (Math.min(imageRef.clientWidth, imageRef.clientHeight) - 50)) * 100 : 0}%, #374151 ${imageRef ? ((crop.size - 50) / (Math.min(imageRef.clientWidth, imageRef.clientHeight) - 50)) * 100 : 0}%, #374151 100%)`,
+                  }}
+                />
+                <div className="flex justify-between text-xs text-blue-100/60 mt-1">
+                  <span>Small</span>
+                  <span>{crop.size}px</span>
+                  <span>Large</span>
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <div className="bg-slate-700/50 rounded-lg p-3">
+                  <p className="text-sm text-blue-100/70 text-center">
+                    Drag the crop area to position it, use the handle in the bottom-right to resize, or use the slider
+                    above.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex space-x-3">
+                <button
+                  onClick={cropImage}
+                  className="flex-1 bg-gradient-to-r from-indigo-500 to-blue-500 hover:from-indigo-600 hover:to-blue-600 text-white px-4 py-2 rounded-lg font-medium transition-all duration-300 flex items-center justify-center"
+                >
+                  <Crop className="w-4 h-4 mr-2" />
+                  Apply Crop
+                </button>
+                <button
+                  onClick={() => {
+                    setShowImageModal(false);
+                    setSelectedImage(null);
+                    setCrop({ x: 50, y: 50, size: 200 });
+                  }}
+                  className="px-4 py-2 border border-slate-600/50 rounded-lg text-blue-100/90 hover:bg-slate-700/50 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+
+              <canvas ref={canvasRef} className="hidden" />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

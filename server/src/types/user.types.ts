@@ -5,6 +5,7 @@ export interface IUser {
   firstName: string;
   lastName: string;
   role: 'user' | 'admin';
+  profileImage?: string; // Base64 encoded image data
   isEmailVerified: boolean;
   emailVerificationToken?: string;
   emailVerificationExpires?: Date;
@@ -22,6 +23,7 @@ export interface UserProfile {
   firstName: string;
   lastName: string;
   role: string;
+  profileImage?: string; // Base64 encoded image data
   isEmailVerified: boolean;
   lastLogin?: Date;
   createdAt: Date;
@@ -30,6 +32,7 @@ export interface UserProfile {
 export interface UpdateProfileRequest {
   firstName?: string;
   lastName?: string;
+  profileImage?: string; // Base64 encoded image data
 }
 
 export interface UserQuery {

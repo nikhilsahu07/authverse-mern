@@ -119,6 +119,22 @@ export class AuthService {
   }
 
   /**
+   * Update profile image
+   */
+  static async updateProfileImage(imageData: string): Promise<User> {
+    try {
+      const response = await api.put<ApiResponse<User>>('/auth/profile', { profileImage: imageData });
+      const user = response.data.data;
+      if (!user) {
+        throw new Error('Invalid response from server');
+      }
+      return user;
+    } catch (error) {
+      throw new Error(handleApiError(error));
+    }
+  }
+
+  /**
    * Change password
    */
   static async changePassword(passwordData: ChangePasswordRequest): Promise<void> {

@@ -185,7 +185,11 @@ export const validatePasswordChange = (data: { currentPassword: string; newPassw
 /**
  * Validate profile update request
  */
-export const validateProfileUpdate = (data: { firstName?: string; lastName?: string }): IValidationResult => {
+export const validateProfileUpdate = (data: {
+  firstName?: string;
+  lastName?: string;
+  profileImage?: string;
+}): IValidationResult => {
   const errors: string[] = [];
 
   if (data.firstName !== undefined) {
@@ -200,6 +204,42 @@ export const validateProfileUpdate = (data: { firstName?: string; lastName?: str
     if (!lastNameValidation.isValid) {
       errors.push(...lastNameValidation.errors);
     }
+  }
+
+  if (data.profileImage !== undefined) {
+    const profileImageValidation = validateProfileImage(data.profileImage);
+    if (!profileImageValidation.isValid) {
+      errors.push(...profileImageValidation.errors);
+    }
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+};
+
+/**
+ * Validate profile image (base64 format)
+ */
+export const validateProfileImage = (profileImage: string): IValidationResult => {
+  const errors: string[] = [];
+
+  if (!profileImage) {
+    return { isValid: true, errors: [] };
+  }
+
+  // Check if it's a valid base64 image
+  const base64Regex = /^data:image\/(png|jpg|jpeg|gif|webp);base64,/;
+  if (!base64Regex.test(profileImage)) {
+    errors.push('Profile image must be a valid base64 encoded image (PNG, JPG, JPEG, GIF, or WEBP)');
+  }
+
+  // Check file size (base64 encoded, roughly 4/3 of original size)
+  // Limit to ~2MB (2MB * 4/3 = ~2.67MB base64)
+  const maxSize = 2.67 * 1024 * 1024; // ~2.67MB in base64
+  if (profileImage.length > maxSize) {
+    errors.push('Profile image is too large. Maximum size is 2MB');
   }
 
   return {

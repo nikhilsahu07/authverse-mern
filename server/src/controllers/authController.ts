@@ -99,7 +99,7 @@ export class AuthController {
   });
 
   static updateProfile = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-    const { firstName, lastName } = req.body;
+    const { firstName, lastName, profileImage } = req.body;
     const authReq = req as AuthenticatedRequest;
     const { user } = authReq;
     if (!user) {
@@ -109,6 +109,7 @@ export class AuthController {
 
     if (firstName) user.firstName = firstName;
     if (lastName) user.lastName = lastName;
+    if (profileImage !== undefined) user.profileImage = profileImage; // Allow empty string to clear image
 
     await user.save();
 

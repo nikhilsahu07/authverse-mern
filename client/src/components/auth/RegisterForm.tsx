@@ -52,7 +52,7 @@ const SignUp = () => {
         lastName: data.lastName,
       });
       navigate('/dashboard', { replace: true });
-    } catch (error) {
+    } catch (_error) {
       // Error is handled by the auth context (toast)
       setIsSubmitting(false);
     }

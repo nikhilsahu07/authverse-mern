@@ -100,7 +100,12 @@ export class AuthService {
       firstName: user.firstName,
       lastName: user.lastName,
       role: user.role,
+      profileImage: user.profileImage,
       isEmailVerified: user.isEmailVerified,
+      isActive: user.isActive,
+      lastLogin: user.lastLogin?.toISOString(),
+      createdAt: user.createdAt.toISOString(),
+      updatedAt: user.updatedAt.toISOString(),
     };
 
     return {

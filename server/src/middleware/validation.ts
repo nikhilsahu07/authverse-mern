@@ -105,6 +105,7 @@ export const validateProfileUpdateRequest = (req: Request, res: Response, next: 
     if (req.body.lastName) {
       req.body.lastName = sanitizeString(req.body.lastName);
     }
+    // Note: We don't sanitize profileImage as it's base64 data
 
     const validation = validateProfileUpdate(req.body);
 

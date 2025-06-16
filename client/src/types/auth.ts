@@ -7,6 +7,7 @@ export interface User {
   role: 'user' | 'admin';
   isEmailVerified: boolean;
   isActive: boolean;
+  profileImage?: string;
   lastLogin?: string;
   createdAt: string;
   updatedAt: string;
@@ -33,6 +34,7 @@ export interface ChangePasswordRequest {
 export interface UpdateProfileRequest {
   firstName?: string;
   lastName?: string;
+  profileImage?: string;
 }
 
 // Authentication response types
@@ -61,6 +63,7 @@ export interface AuthContextType {
   logout: () => Promise<void>;
   updateProfile: (data: UpdateProfileRequest) => Promise<void>;
   changePassword: (data: ChangePasswordRequest) => Promise<void>;
+  updateProfileImage: (imageData: string) => Promise<void>;
   refreshUser: () => Promise<void>;
 }
 

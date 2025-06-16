@@ -5,6 +5,7 @@ import {
   ChevronDown,
   ChevronRight,
   Circle,
+  Edit2,
   Key,
   LayoutDashboard,
   LogOut,
@@ -28,7 +29,11 @@ const Sidebar = ({ isMobileOpen = false, onMobileClose }: SidebarProps) => {
   const [securityOpen, setSecurityOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const { user, logout } = useAuth();
+
+  // Determine if sidebar should be expanded (either not collapsed or being hovered)
+  const isExpanded = !isCollapsed || isHovered;
 
   const handleLogout = () => {
     logout();
@@ -66,21 +71,23 @@ const Sidebar = ({ isMobileOpen = false, onMobileClose }: SidebarProps) => {
   const SidebarContent = () => (
     <div
       className={`${
-        isCollapsed ? 'w-20' : 'w-64'
-      } bg-slate-900 text-white h-full transition-all duration-500 ease-in-out flex flex-col shadow-2xl lg:relative`}
+        isExpanded ? 'w-64' : 'w-20'
+      } bg-slate-900 text-white h-full transition-all duration-300 ease-in-out flex flex-col shadow-2xl lg:relative`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
       {/* Header */}
       <div
-        className={`${isCollapsed ? 'p-3' : 'p-4'} border-b border-slate-800 transition-all duration-500 ease-in-out`}
+        className={`${isExpanded ? 'p-4' : 'p-3'} border-b border-slate-800 transition-all duration-300 ease-in-out`}
       >
-        <div className={`flex ${isCollapsed ? 'flex-col space-y-3 items-center' : 'items-center justify-between'}`}>
+        <div className={`flex ${isExpanded ? 'items-center justify-between' : 'flex-col space-y-3 items-center'}`}>
           <Link
             to="/"
-            className={`flex ${isCollapsed ? 'justify-center' : 'items-center space-x-3'} hover:opacity-80 transition-opacity duration-300`}
+            className={`flex ${isExpanded ? 'items-center space-x-3' : 'justify-center'} hover:opacity-80 transition-opacity duration-300`}
             onClick={handleNavClick}
           >
             <img src="/authverse.png" alt="AuthVerse" className="w-8 h-8 object-contain transition-all duration-300" />
-            {!isCollapsed && <span className="text-xl font-semibold">AuthVerse</span>}
+            {isExpanded && <span className="text-xl font-semibold">AuthVerse</span>}
           </Link>
 
           <button
@@ -114,25 +121,36 @@ const Sidebar = ({ isMobileOpen = false, onMobileClose }: SidebarProps) => {
           handleNavClick();
         }}
         className={`${
-          isCollapsed ? 'p-2' : 'p-4'
-        } border-b border-slate-800/50 transition-all duration-500 ease-in-out cursor-pointer hover:bg-slate-800/50`}
+          isExpanded ? 'p-4' : 'p-2'
+        } border-b border-slate-800/50 transition-all duration-300 ease-in-out cursor-pointer hover:bg-slate-800/50`}
       >
         <div
           className={`flex items-center ${
-            isCollapsed ? 'justify-center' : 'space-x-3'
-          } transition-all duration-500 ease-in-out`}
+            isExpanded ? 'space-x-3' : 'justify-center'
+          } transition-all duration-300 ease-in-out`}
         >
-          <div className="w-10 h-10 bg-gradient-to-r from-indigo-500 to-blue-500 rounded-full flex items-center justify-center transition-all duration-300">
-            <User className="w-5 h-5 text-white" />
+          <div className="relative w-10 h-10 transition-all duration-300">
+            {user?.profileImage ? (
+              <img
+                src={user.profileImage}
+                alt="Profile"
+                className="w-10 h-10 rounded-full object-cover ring-2 ring-indigo-500/50 transition-all duration-300"
+              />
+            ) : (
+              <div className="w-10 h-10 bg-gradient-to-r from-indigo-500 to-blue-500 rounded-full flex items-center justify-center transition-all duration-300">
+                <User className="w-5 h-5 text-white" />
+              </div>
+            )}
           </div>
           <div
-            className={`transition-all duration-500 ease-in-out ${
-              isCollapsed ? 'opacity-0 scale-0 w-0 h-0 overflow-hidden' : 'opacity-100 scale-100'
+            className={`transition-all duration-300 ease-in-out ${
+              isExpanded ? 'opacity-100 scale-100' : 'opacity-0 scale-0 w-0 h-0 overflow-hidden'
             }`}
           >
             <div className="text-white font-medium text-sm">Welcome back!</div>
-            <div className="text-blue-100/70 text-xs">
+            <div className="text-blue-100/70 text-sm flex items-center gap-2">
               {user?.firstName} {user?.lastName}
+              <Edit2 className="w-4 h-4" />
             </div>
           </div>
         </div>
@@ -140,12 +158,12 @@ const Sidebar = ({ isMobileOpen = false, onMobileClose }: SidebarProps) => {
 
       {/* Main Menu */}
       <div
-        className={`flex-1 ${isCollapsed ? 'p-2' : 'p-4'} transition-all duration-500 ease-in-out overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700/50 scrollbar-track-transparent hover:scrollbar-thumb-slate-600/70`}
+        className={`flex-1 ${isExpanded ? 'p-4' : 'p-2'} transition-all duration-300 ease-in-out overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700/50 scrollbar-track-transparent hover:scrollbar-thumb-slate-600/70`}
       >
         <div className="mb-6 pr-1">
           <div
-            className={`transition-all duration-500 ease-in-out ${
-              isCollapsed ? 'opacity-0 h-0 mb-0 overflow-hidden' : 'opacity-100 h-auto mb-3'
+            className={`transition-all duration-300 ease-in-out ${
+              isExpanded ? 'opacity-100 h-auto mb-3' : 'opacity-0 h-0 mb-0 overflow-hidden'
             }`}
           >
             <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">MAIN MENU</h3>
@@ -156,14 +174,14 @@ const Sidebar = ({ isMobileOpen = false, onMobileClose }: SidebarProps) => {
             to="/dashboard"
             onClick={handleNavClick}
             className={`flex items-center ${
-              isCollapsed ? 'justify-center p-3 mb-2' : 'space-x-3 px-3 py-2'
+              isExpanded ? 'space-x-3 px-3 py-2' : 'justify-center p-3 mb-2'
             } rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-all duration-300 ease-in-out hover:scale-105 group`}
-            title={isCollapsed ? 'Dashboard' : ''}
+            title={!isExpanded ? 'Dashboard' : ''}
           >
             <LayoutDashboard className="w-6 h-6 flex-shrink-0 transition-all duration-300 group-hover:text-indigo-400" />
             <span
-              className={`transition-all duration-500 ease-in-out ${
-                isCollapsed ? 'opacity-0 scale-0 w-0 overflow-hidden' : 'opacity-100 scale-100'
+              className={`transition-all duration-300 ease-in-out ${
+                isExpanded ? 'opacity-100 scale-100' : 'opacity-0 scale-0 w-0 overflow-hidden'
               }`}
             >
               Dashboard
@@ -173,25 +191,25 @@ const Sidebar = ({ isMobileOpen = false, onMobileClose }: SidebarProps) => {
           {/* Analytics */}
           <div className="mt-2">
             <button
-              onClick={() => !isCollapsed && setAnalyticsOpen(!analyticsOpen)}
+              onClick={() => isExpanded && setAnalyticsOpen(!analyticsOpen)}
               className={`flex items-center ${
-                isCollapsed ? 'justify-center p-3 mb-2 w-full' : 'justify-between w-full px-3 py-2'
+                isExpanded ? 'justify-between w-full px-3 py-2' : 'justify-center p-3 mb-2 w-full'
               } rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-all duration-300 ease-in-out hover:scale-105 group`}
-              title={isCollapsed ? 'Analytics' : ''}
+              title={!isExpanded ? 'Analytics' : ''}
             >
-              <div className={`flex items-center ${isCollapsed ? '' : 'space-x-3'} transition-all duration-300`}>
+              <div className={`flex items-center ${isExpanded ? 'space-x-3' : ''} transition-all duration-300`}>
                 <BarChart3 className="w-6 h-6 flex-shrink-0 transition-all duration-300 group-hover:text-indigo-400" />
                 <span
-                  className={`transition-all duration-500 ease-in-out ${
-                    isCollapsed ? 'opacity-0 scale-0 w-0 overflow-hidden' : 'opacity-100 scale-100'
+                  className={`transition-all duration-300 ease-in-out ${
+                    isExpanded ? 'opacity-100 scale-100' : 'opacity-0 scale-0 w-0 overflow-hidden'
                   }`}
                 >
                   Analytics
                 </span>
               </div>
               <div
-                className={`transition-all duration-500 ease-in-out ${
-                  isCollapsed ? 'opacity-0 scale-0 w-0 overflow-hidden' : 'opacity-100 scale-100'
+                className={`transition-all duration-300 ease-in-out ${
+                  isExpanded ? 'opacity-100 scale-100' : 'opacity-0 scale-0 w-0 overflow-hidden'
                 }`}
               >
                 {analyticsOpen ? (
@@ -203,8 +221,8 @@ const Sidebar = ({ isMobileOpen = false, onMobileClose }: SidebarProps) => {
             </button>
 
             <div
-              className={`ml-8 mt-1 space-y-1 transition-all duration-500 ease-in-out ${
-                analyticsOpen && !isCollapsed ? 'opacity-100 max-h-96' : 'opacity-0 max-h-0 overflow-hidden'
+              className={`ml-8 mt-1 space-y-1 transition-all duration-300 ease-in-out ${
+                analyticsOpen && isExpanded ? 'opacity-100 max-h-96' : 'opacity-0 max-h-0 overflow-hidden'
               }`}
             >
               {analyticsItems.map((item) => (
@@ -226,25 +244,25 @@ const Sidebar = ({ isMobileOpen = false, onMobileClose }: SidebarProps) => {
           {/* Security */}
           <div className="mt-2">
             <button
-              onClick={() => !isCollapsed && setSecurityOpen(!securityOpen)}
+              onClick={() => isExpanded && setSecurityOpen(!securityOpen)}
               className={`flex items-center ${
-                isCollapsed ? 'justify-center p-3 mb-2 w-full' : 'justify-between w-full px-3 py-2'
+                isExpanded ? 'justify-between w-full px-3 py-2' : 'justify-center p-3 mb-2 w-full'
               } rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-all duration-300 ease-in-out hover:scale-105 group`}
-              title={isCollapsed ? 'Security' : ''}
+              title={!isExpanded ? 'Security' : ''}
             >
-              <div className={`flex items-center ${isCollapsed ? '' : 'space-x-3'} transition-all duration-300`}>
+              <div className={`flex items-center ${isExpanded ? 'space-x-3' : ''} transition-all duration-300`}>
                 <Shield className="w-6 h-6 flex-shrink-0 transition-all duration-300 group-hover:text-indigo-400" />
                 <span
-                  className={`transition-all duration-500 ease-in-out ${
-                    isCollapsed ? 'opacity-0 scale-0 w-0 overflow-hidden' : 'opacity-100 scale-100'
+                  className={`transition-all duration-300 ease-in-out ${
+                    isExpanded ? 'opacity-100 scale-100' : 'opacity-0 scale-0 w-0 overflow-hidden'
                   }`}
                 >
                   Security
                 </span>
               </div>
               <div
-                className={`transition-all duration-500 ease-in-out ${
-                  isCollapsed ? 'opacity-0 scale-0 w-0 overflow-hidden' : 'opacity-100 scale-100'
+                className={`transition-all duration-300 ease-in-out ${
+                  isExpanded ? 'opacity-100 scale-100' : 'opacity-0 scale-0 w-0 overflow-hidden'
                 }`}
               >
                 {securityOpen ? (
@@ -256,8 +274,8 @@ const Sidebar = ({ isMobileOpen = false, onMobileClose }: SidebarProps) => {
             </button>
 
             <div
-              className={`ml-8 mt-1 space-y-1 transition-all duration-500 ease-in-out ${
-                securityOpen && !isCollapsed ? 'opacity-100 max-h-96' : 'opacity-0 max-h-0 overflow-hidden'
+              className={`ml-8 mt-1 space-y-1 transition-all duration-300 ease-in-out ${
+                securityOpen && isExpanded ? 'opacity-100 max-h-96' : 'opacity-0 max-h-0 overflow-hidden'
               }`}
             >
               {securityItems.map((item) => (
@@ -279,14 +297,14 @@ const Sidebar = ({ isMobileOpen = false, onMobileClose }: SidebarProps) => {
             to="/dashboard/users"
             onClick={handleNavClick}
             className={`flex items-center ${
-              isCollapsed ? 'justify-center p-3 mb-2' : 'space-x-3 px-3 py-2'
+              isExpanded ? 'space-x-3 px-3 py-2' : 'justify-center p-3 mb-2'
             } rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-all duration-300 ease-in-out hover:scale-105 group mt-2`}
-            title={isCollapsed ? 'Users' : ''}
+            title={!isExpanded ? 'Users' : ''}
           >
             <Users className="w-6 h-6 flex-shrink-0 transition-all duration-300 group-hover:text-indigo-400" />
             <span
-              className={`transition-all duration-500 ease-in-out ${
-                isCollapsed ? 'opacity-0 scale-0 w-0 overflow-hidden' : 'opacity-100 scale-100'
+              className={`transition-all duration-300 ease-in-out ${
+                isExpanded ? 'opacity-100 scale-100' : 'opacity-0 scale-0 w-0 overflow-hidden'
               }`}
             >
               Users
@@ -298,14 +316,14 @@ const Sidebar = ({ isMobileOpen = false, onMobileClose }: SidebarProps) => {
             to="/dashboard/api-keys"
             onClick={handleNavClick}
             className={`flex items-center ${
-              isCollapsed ? 'justify-center p-3 mb-2' : 'space-x-3 px-3 py-2'
+              isExpanded ? 'space-x-3 px-3 py-2' : 'justify-center p-3 mb-2'
             } rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-all duration-300 ease-in-out hover:scale-105 group mt-2`}
-            title={isCollapsed ? 'API Keys' : ''}
+            title={!isExpanded ? 'API Keys' : ''}
           >
             <Key className="w-6 h-6 flex-shrink-0 transition-all duration-300 group-hover:text-indigo-400" />
             <span
-              className={`transition-all duration-500 ease-in-out ${
-                isCollapsed ? 'opacity-0 scale-0 w-0 overflow-hidden' : 'opacity-100 scale-100'
+              className={`transition-all duration-300 ease-in-out ${
+                isExpanded ? 'opacity-100 scale-100' : 'opacity-0 scale-0 w-0 overflow-hidden'
               }`}
             >
               API Keys
@@ -316,8 +334,8 @@ const Sidebar = ({ isMobileOpen = false, onMobileClose }: SidebarProps) => {
         {/* Settings Section */}
         <div className="mb-6 pr-1">
           <div
-            className={`transition-all duration-500 ease-in-out ${
-              isCollapsed ? 'opacity-0 h-0 mb-0 overflow-hidden' : 'opacity-100 h-auto mb-3'
+            className={`transition-all duration-300 ease-in-out ${
+              isExpanded ? 'opacity-100 h-auto mb-3' : 'opacity-0 h-0 mb-0 overflow-hidden'
             }`}
           >
             <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">SETTINGS</h3>
@@ -326,25 +344,25 @@ const Sidebar = ({ isMobileOpen = false, onMobileClose }: SidebarProps) => {
           {/* Settings */}
           <div>
             <button
-              onClick={() => !isCollapsed && setSettingsOpen(!settingsOpen)}
+              onClick={() => isExpanded && setSettingsOpen(!settingsOpen)}
               className={`flex items-center ${
-                isCollapsed ? 'justify-center p-3 mb-2 w-full' : 'justify-between w-full px-3 py-2'
+                isExpanded ? 'justify-between w-full px-3 py-2' : 'justify-center p-3 mb-2 w-full'
               } rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-all duration-300 ease-in-out hover:scale-105 group`}
-              title={isCollapsed ? 'Settings' : ''}
+              title={!isExpanded ? 'Settings' : ''}
             >
-              <div className={`flex items-center ${isCollapsed ? '' : 'space-x-3'} transition-all duration-300`}>
+              <div className={`flex items-center ${isExpanded ? 'space-x-3' : ''} transition-all duration-300`}>
                 <Settings className="w-6 h-6 flex-shrink-0 transition-all duration-300 group-hover:text-indigo-400" />
                 <span
-                  className={`transition-all duration-500 ease-in-out ${
-                    isCollapsed ? 'opacity-0 scale-0 w-0 overflow-hidden' : 'opacity-100 scale-100'
+                  className={`transition-all duration-300 ease-in-out ${
+                    isExpanded ? 'opacity-100 scale-100' : 'opacity-0 scale-0 w-0 overflow-hidden'
                   }`}
                 >
                   Settings
                 </span>
               </div>
               <div
-                className={`transition-all duration-500 ease-in-out ${
-                  isCollapsed ? 'opacity-0 scale-0 w-0 overflow-hidden' : 'opacity-100 scale-100'
+                className={`transition-all duration-300 ease-in-out ${
+                  isExpanded ? 'opacity-100 scale-100' : 'opacity-0 scale-0 w-0 overflow-hidden'
                 }`}
               >
                 {settingsOpen ? (
@@ -356,8 +374,8 @@ const Sidebar = ({ isMobileOpen = false, onMobileClose }: SidebarProps) => {
             </button>
 
             <div
-              className={`ml-8 mt-1 space-y-1 transition-all duration-500 ease-in-out ${
-                settingsOpen && !isCollapsed ? 'opacity-100 max-h-96' : 'opacity-0 max-h-0 overflow-hidden'
+              className={`ml-8 mt-1 space-y-1 transition-all duration-300 ease-in-out ${
+                settingsOpen && isExpanded ? 'opacity-100 max-h-96' : 'opacity-0 max-h-0 overflow-hidden'
               }`}
             >
               {settingsItems.map((item) => (
@@ -378,19 +396,19 @@ const Sidebar = ({ isMobileOpen = false, onMobileClose }: SidebarProps) => {
 
       {/* Footer - Logout */}
       <div
-        className={`${isCollapsed ? 'p-2' : 'p-4'} border-t border-slate-800/50 transition-all duration-500 ease-in-out`}
+        className={`${isExpanded ? 'p-4' : 'p-2'} border-t border-slate-800/50 transition-all duration-300 ease-in-out`}
       >
         <button
           onClick={handleLogout}
           className={`flex items-center ${
-            isCollapsed ? 'justify-center p-3 w-full' : 'space-x-3 px-3 py-2 w-full'
+            isExpanded ? 'space-x-3 px-3 py-2 w-full' : 'justify-center p-3 w-full'
           } rounded-lg text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all duration-300 ease-in-out hover:scale-105 group`}
-          title={isCollapsed ? 'Logout' : ''}
+          title={!isExpanded ? 'Logout' : ''}
         >
           <LogOut className="w-6 h-6 flex-shrink-0 transition-all duration-300" />
           <span
-            className={`transition-all duration-500 ease-in-out ${
-              isCollapsed ? 'opacity-0 scale-0 w-0 overflow-hidden' : 'opacity-100 scale-100'
+            className={`transition-all duration-300 ease-in-out ${
+              isExpanded ? 'opacity-100 scale-100' : 'opacity-0 scale-0 w-0 overflow-hidden'
             }`}
           >
             Logout
