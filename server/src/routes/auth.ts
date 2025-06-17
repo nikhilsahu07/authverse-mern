@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import passport from 'passport';
 import { AuthController } from '../controllers/authController.js';
 import { authenticateToken } from '../middleware/auth.js';
 import {
@@ -15,6 +16,34 @@ const router = Router();
 router.post('/register', validateRegisterRequest, AuthController.register);
 router.post('/login', validateLoginRequest, AuthController.login);
 router.post('/refresh-token', validateRefreshTokenRequest, AuthController.refreshToken);
+
+// OAuth routes
+// Google OAuth
+router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+router.get(
+  '/google/callback',
+  passport.authenticate('google', { failureRedirect: '/auth/failure' }),
+  AuthController.oauthSuccess,
+);
+
+// GitHub OAuth
+router.get('/github', passport.authenticate('github', { scope: ['user:email'] }));
+router.get(
+  '/github/callback',
+  passport.authenticate('github', { failureRedirect: '/auth/failure' }),
+  AuthController.oauthSuccess,
+);
+
+// Facebook OAuth
+router.get('/facebook', passport.authenticate('facebook', { scope: ['email'] }));
+router.get(
+  '/facebook/callback',
+  passport.authenticate('facebook', { failureRedirect: '/auth/failure' }),
+  AuthController.oauthSuccess,
+);
+
+// OAuth failure route
+router.get('/failure', AuthController.oauthFailure);
 
 // Protected routes (require authentication)
 router.use(authenticateToken);

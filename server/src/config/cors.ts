@@ -6,9 +6,15 @@ import { getEnvVar, isDevelopment } from '../utils/helpers.js';
  */
 const corsOptions: cors.CorsOptions = {
   origin: (origin, callback) => {
-    const allowedOrigins = getEnvVar('ALLOWED_ORIGINS', 'http://localhost:3000,http://localhost:5173')
+    const allowedOrigins = getEnvVar(
+      'ALLOWED_ORIGINS',
+      'http://localhost:5173,http://127.0.0.1:5173,https://authverse.vercel.app',
+    )
       .split(',')
       .map((origin) => origin.trim());
+
+    console.log('allowedOrigins', allowedOrigins);
+    console.log('origin', origin);
 
     // Allow requests with no origin (like mobile apps or curl requests) in development
     if (isDevelopment() && !origin) {
@@ -16,7 +22,13 @@ const corsOptions: cors.CorsOptions = {
       return;
     }
 
-    if (allowedOrigins.includes(origin as string) || isDevelopment()) {
+    // In development, be more permissive
+    if (isDevelopment()) {
+      callback(null, true);
+      return;
+    }
+
+    if (allowedOrigins.includes(origin as string)) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));

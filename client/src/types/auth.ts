@@ -8,6 +8,7 @@ export interface User {
   isEmailVerified: boolean;
   isActive: boolean;
   profileImage?: string;
+  effectiveProfileImage?: string;
   lastLogin?: string;
   createdAt: string;
   updatedAt: string;

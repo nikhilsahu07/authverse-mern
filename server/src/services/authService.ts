@@ -72,6 +72,9 @@ export class AuthService {
     }
 
     // Verify password
+    if (!user.password) {
+      throw createUnauthorizedError(ERROR_MESSAGES.INVALID_CREDENTIALS);
+    }
     const isPasswordValid = await comparePassword(password, user.password);
     if (!isPasswordValid) {
       throw createUnauthorizedError(ERROR_MESSAGES.INVALID_CREDENTIALS);
@@ -186,6 +189,9 @@ export class AuthService {
     }
 
     // Verify current password
+    if (!user.password) {
+      throw createUnauthorizedError('Current password is incorrect');
+    }
     const isCurrentPasswordValid = await comparePassword(currentPassword, user.password);
     if (!isCurrentPasswordValid) {
       throw createUnauthorizedError('Current password is incorrect');

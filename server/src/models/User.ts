@@ -7,6 +7,7 @@ export interface IUserDocument extends IUser, Document {
   _id: string;
   createdAt: Date;
   updatedAt: Date;
+  effectiveProfileImage?: string;
   isEmailVerificationTokenValid: () => boolean;
   isPasswordResetTokenValid: () => boolean;
   clearVerificationTokens: () => void;
@@ -18,6 +19,7 @@ interface IUserModel extends mongoose.Model<IUserDocument> {
   findByEmail: (email: string) => mongoose.Query<IUserDocument | null, IUserDocument>;
   findByEmailVerificationToken: (token: string) => mongoose.Query<IUserDocument | null, IUserDocument>;
   findByPasswordResetToken: (token: string) => mongoose.Query<IUserDocument | null, IUserDocument>;
+  findByOAuthProvider: (provider: string, providerId: string) => mongoose.Query<IUserDocument | null, IUserDocument>;
 }
 
 const userSchema = new Schema<IUserDocument>(
@@ -32,7 +34,9 @@ const userSchema = new Schema<IUserDocument>(
     },
     password: {
       type: String,
-      required: [true, 'Password is required'],
+      required(this: IUserDocument): boolean {
+        return this.authProvider === 'local';
+      },
       minlength: [8, 'Password must be at least 8 characters long'],
     },
     firstName: {
@@ -59,11 +63,19 @@ const userSchema = new Schema<IUserDocument>(
       default: undefined,
       validate: {
         validator(v: string): boolean {
-          // Validate base64 image format if provided
+          // Validate base64 image format or URL if provided
           if (!v) return true;
-          return /^data:image\/(png|jpg|jpeg|gif|webp);base64,/.test(v);
+          // Check for base64 format
+          const isBase64 = /^data:image\/(png|jpg|jpeg|gif|webp);base64,/.test(v);
+          // Check for URL format (http/https)
+          const isUrl =
+            /^https?:\/\/.+\.(png|jpg|jpeg|gif|webp)$/i.test(v) ||
+            /^https?:\/\/.*googleusercontent\.com\/.*/.test(v) ||
+            /^https?:\/\/.*githubusercontent\.com\/.*/.test(v) ||
+            /^https?:\/\/.*fbcdn\.net\/.*/.test(v);
+          return isBase64 || isUrl;
         },
-        message: 'Profile image must be a valid base64 encoded image',
+        message: 'Profile image must be a valid base64 encoded image or a valid image URL',
       },
     },
     isEmailVerified: {
@@ -94,6 +106,28 @@ const userSchema = new Schema<IUserDocument>(
       type: Boolean,
       default: true,
     },
+    authProvider: {
+      type: String,
+      enum: ['local', 'google', 'github', 'facebook'],
+      default: 'local',
+    },
+    oauthProfiles: [
+      {
+        providerId: {
+          type: String,
+          required: true,
+        },
+        provider: {
+          type: String,
+          enum: ['local', 'google', 'github', 'facebook'],
+          required: true,
+        },
+        email: String,
+        firstName: String,
+        lastName: String,
+        profileImage: String,
+      },
+    ],
   },
   {
     timestamps: true,
@@ -105,6 +139,8 @@ const userSchema = new Schema<IUserDocument>(
         delete ret['password'];
         delete ret['emailVerificationToken'];
         delete ret['passwordResetToken'];
+        // Include effective profile image
+        ret['effectiveProfileImage'] = (_doc as IUserDocument).effectiveProfileImage;
       },
     },
     toObject: {
@@ -135,6 +171,22 @@ userSchema.pre('save', function (next) {
 // Virtual for full name
 userSchema.virtual('fullName').get(function (this: IUserDocument): string {
   return `${this.firstName} ${this.lastName}`;
+});
+
+// Virtual for effective profile image (prefer custom base64 over OAuth URL)
+userSchema.virtual('effectiveProfileImage').get(function (this: IUserDocument): string | undefined {
+  // If user has a custom profile image (base64), use it
+  if (this.profileImage?.startsWith('data:image/')) {
+    return this.profileImage;
+  }
+
+  // Otherwise, use the profile image URL from OAuth
+  if (this.profileImage) {
+    return this.profileImage;
+  }
+
+  // Fallback to OAuth profile image if no main profile image
+  return this.oauthProfiles?.[0]?.profileImage;
 });
 
 // Instance method to check if email verification token is valid
@@ -181,6 +233,17 @@ userSchema.statics['findByPasswordResetToken'] = function (
   return this.findOne({
     passwordResetToken: token,
     passwordResetExpires: { $gt: new Date() },
+  });
+};
+
+// Static method to find user by OAuth provider
+userSchema.statics['findByOAuthProvider'] = function (
+  provider: string,
+  providerId: string,
+): mongoose.Query<IUserDocument | null, IUserDocument> {
+  return this.findOne({
+    'oauthProfiles.provider': provider,
+    'oauthProfiles.providerId': providerId,
   });
 };
 

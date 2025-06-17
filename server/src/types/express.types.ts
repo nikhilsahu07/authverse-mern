@@ -1,16 +1,7 @@
 import type { Request } from 'express';
-import type { IUser } from './user.types.js';
-
-declare global {
-  namespace Express {
-    interface Request {
-      user?: IUser;
-      userId?: string;
-    }
-  }
-}
+import type { IUserDocument } from '../models/User.js';
 
 export interface AuthRequest extends Request {
-  user: IUser;
+  user: IUserDocument;
   userId: string;
 }

@@ -148,7 +148,7 @@ const Sidebar = ({ isMobileOpen = false, onMobileClose }: SidebarProps) => {
             }`}
           >
             <div className="text-white font-medium text-sm">Welcome back!</div>
-            <div className="text-blue-100/70 text-sm flex items-center gap-2">
+            <div className="text-blue-100/70 text-sm flex items-center gap-14">
               {user?.firstName} {user?.lastName}
               <Edit2 className="w-4 h-4" />
             </div>

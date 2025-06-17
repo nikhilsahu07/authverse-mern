@@ -33,12 +33,14 @@ const ProfilePage: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Profile image states
-  const [profileImage, setProfileImage] = useState<string | null>(user?.profileImage || null);
+  const [profileImage, setProfileImage] = useState<string | undefined>(
+    user?.effectiveProfileImage || user?.profileImage,
+  );
 
   // Update profile image when user changes
   React.useEffect(() => {
-    setProfileImage(user?.profileImage || null);
-  }, [user?.profileImage]);
+    setProfileImage(user?.effectiveProfileImage || user?.profileImage);
+  }, [user?.effectiveProfileImage, user?.profileImage]);
   const [showImageModal, setShowImageModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [crop, setCrop] = useState({ x: 50, y: 50, size: 200 });
@@ -241,9 +243,9 @@ const ProfilePage: React.FC = () => {
               <div className="flex items-center space-x-3 sm:space-x-4">
                 {/* Profile Picture */}
                 <div className="relative">
-                  {profileImage ? (
+                  {user?.effectiveProfileImage || user?.profileImage || profileImage ? (
                     <img
-                      src={profileImage}
+                      src={user?.effectiveProfileImage || user?.profileImage || profileImage}
                       alt="Profile"
                       className="h-12 w-12 sm:h-16 sm:w-16 rounded-full object-cover ring-2 ring-indigo-500/50"
                     />
@@ -309,8 +311,12 @@ const ProfilePage: React.FC = () => {
                   onDrop={handleDrop}
                 >
                   <div className="flex flex-col items-center space-y-3">
-                    {profileImage ? (
-                      <img src={profileImage} alt="Profile preview" className="w-16 h-16 rounded-full object-cover" />
+                    {user?.effectiveProfileImage || user?.profileImage || profileImage ? (
+                      <img
+                        src={user?.effectiveProfileImage || user?.profileImage || profileImage}
+                        alt="Profile preview"
+                        className="w-16 h-16 rounded-full object-cover"
+                      />
                     ) : (
                       <div className="w-16 h-16 bg-slate-700/50 rounded-full flex items-center justify-center">
                         <Upload className="w-6 h-6 text-blue-100/60" />

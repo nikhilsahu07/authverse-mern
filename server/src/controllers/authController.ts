@@ -11,7 +11,36 @@ interface AuthenticatedRequest extends Request {
   userId?: string;
 }
 
+interface OAuthUser {
+  user: IUserDocument;
+  tokens: {
+    accessToken: { token: string };
+    refreshToken: { token: string };
+  };
+}
+
 export class AuthController {
+  // OAuth success callback handler
+  static oauthSuccess = asyncHandler((req: Request, res: Response): void => {
+    const { user, tokens } = req.user as OAuthUser;
+
+    if (!user || !tokens) {
+      res.redirect(`${process.env['CLIENT_URL'] || 'http://localhost:5173'}/signin?error=oauth_failed`);
+      return;
+    }
+
+    // Redirect to frontend with tokens
+    const clientUrl = process.env['CLIENT_URL'] || 'http://localhost:5173';
+    res.redirect(
+      `${clientUrl}/auth/oauth-success?token=${tokens.accessToken.token}&refresh=${tokens.refreshToken.token}`,
+    );
+  });
+
+  // OAuth failure handler
+  static oauthFailure = asyncHandler((_req: Request, res: Response): void => {
+    const clientUrl = process.env['CLIENT_URL'] || 'http://localhost:5173';
+    res.redirect(`${clientUrl}/signin?error=oauth_failed`);
+  });
   static register = asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const { email, password, firstName, lastName } = req.body;
 
@@ -63,7 +92,8 @@ export class AuthController {
   });
 
   static logoutAll = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-    const { userId } = req;
+    const authReq = req as AuthenticatedRequest;
+    const { userId } = authReq;
     if (!userId) {
       res.status(HTTP_STATUS.UNAUTHORIZED).json(createSuccessResponse(SUCCESS_MESSAGES.LOGOUT_SUCCESS));
       return;
@@ -76,7 +106,8 @@ export class AuthController {
 
   static changePassword = asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const { currentPassword, newPassword } = req.body;
-    const { userId } = req;
+    const authReq = req as AuthenticatedRequest;
+    const { userId } = authReq;
     if (!userId) {
       res.status(HTTP_STATUS.UNAUTHORIZED).json(createSuccessResponse(SUCCESS_MESSAGES.LOGOUT_SUCCESS));
       return;

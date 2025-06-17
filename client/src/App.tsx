@@ -7,6 +7,7 @@ import SignUp from './components/auth/RegisterForm';
 import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';
 import ProfilePage from './pages/ProfilePage';
+import OAuthSuccess from './pages/OAuthSuccess';
 
 function App() {
   return (
@@ -34,6 +35,9 @@ function App() {
                 </RequireGuest>
               }
             />
+
+            {/* OAuth callback route */}
+            <Route path="/auth/oauth-success" element={<OAuthSuccess />} />
 
             {/* Protected routes (require authentication) */}
             <Route

@@ -7,6 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 import { loginSchema } from '../../lib/validations';
 import type { LoginFormData } from '../../lib/validations';
 import LoadingSpinner from '../ui/LoadingSpinner';
+import { AuthService } from '../../services/authService';
 
 const SignIn = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -63,7 +64,11 @@ const SignIn = () => {
               <div className="mb-5">
                 <div className="grid grid-cols-3 gap-3 mb-5">
                   {/* Google */}
-                  <button className="group w-full inline-flex justify-center items-center py-2.5 px-3 rounded-lg border border-slate-600/50 bg-slate-700/50 backdrop-blur-sm text-white hover:bg-slate-600/50 transition-all duration-300 hover:scale-105">
+                  <button
+                    type="button"
+                    onClick={() => AuthService.initiateOAuthLogin('google')}
+                    className="group w-full inline-flex justify-center items-center py-2.5 px-3 rounded-lg border border-slate-600/50 bg-slate-700/50 backdrop-blur-sm text-white hover:bg-slate-600/50 transition-all duration-300 hover:scale-105"
+                  >
                     <svg className="w-4 h-4" viewBox="0 0 24 24">
                       <path
                         fill="#4285F4"
@@ -85,12 +90,20 @@ const SignIn = () => {
                   </button>
 
                   {/* GitHub */}
-                  <button className="group w-full inline-flex justify-center items-center py-2.5 px-3 rounded-lg border border-slate-600/50 bg-slate-700/50 backdrop-blur-sm text-white hover:bg-slate-600/50 transition-all duration-300 hover:scale-105">
+                  <button
+                    type="button"
+                    onClick={() => AuthService.initiateOAuthLogin('github')}
+                    className="group w-full inline-flex justify-center items-center py-2.5 px-3 rounded-lg border border-slate-600/50 bg-slate-700/50 backdrop-blur-sm text-white hover:bg-slate-600/50 transition-all duration-300 hover:scale-105"
+                  >
                     <Github className="w-4 h-4" />
                   </button>
 
                   {/* Facebook */}
-                  <button className="group w-full inline-flex justify-center items-center py-2.5 px-3 rounded-lg border border-slate-600/50 bg-slate-700/50 backdrop-blur-sm text-white hover:bg-slate-600/50 transition-all duration-300 hover:scale-105">
+                  <button
+                    type="button"
+                    onClick={() => AuthService.initiateOAuthLogin('facebook')}
+                    className="group w-full inline-flex justify-center items-center py-2.5 px-3 rounded-lg border border-slate-600/50 bg-slate-700/50 backdrop-blur-sm text-white hover:bg-slate-600/50 transition-all duration-300 hover:scale-105"
+                  >
                     <svg className="w-4 h-4" viewBox="0 0 24 24">
                       <path
                         fill="#1877F2"

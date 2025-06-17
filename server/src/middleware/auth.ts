@@ -1,15 +1,25 @@
 import type { Request, Response, NextFunction } from 'express';
 import { verifyAccessToken, extractTokenFromHeader } from '../utils/jwt.js';
-import User from '../models/User.js';
+import User, { type IUserDocument } from '../models/User.js';
 import { createErrorResponse } from '../utils/helpers.js';
 import { HTTP_STATUS, ERROR_MESSAGES } from '../utils/constants.js';
+
+// Extend Request interface for auth
+interface AuthenticatedRequest extends Request {
+  user?: any;
+  userId?: string;
+}
 
 type ErrorMessage = (typeof ERROR_MESSAGES)[keyof typeof ERROR_MESSAGES];
 
 /**
  * Middleware to authenticate JWT tokens
  */
-export const authenticateToken = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const authenticateToken = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const authHeader = req.headers.authorization;
     const token = extractTokenFromHeader(authHeader);
@@ -57,14 +67,15 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
  * Middleware to check if user is admin
  */
 export const requireAdmin = (req: Request, res: Response, next: NextFunction): void => {
-  if (!req.user) {
+  const user = req.user as IUserDocument;
+  if (!user) {
     res
       .status(HTTP_STATUS.UNAUTHORIZED)
       .json(createErrorResponse(ERROR_MESSAGES.UNAUTHORIZED, 'Authentication required'));
     return;
   }
 
-  if (req.user.role !== 'admin') {
+  if (user.role !== 'admin') {
     res.status(HTTP_STATUS.FORBIDDEN).json(createErrorResponse(ERROR_MESSAGES.ACCESS_DENIED, 'Admin access required'));
     return;
   }
@@ -76,14 +87,15 @@ export const requireAdmin = (req: Request, res: Response, next: NextFunction): v
  * Middleware to check if user has verified email
  */
 export const requireEmailVerified = (req: Request, res: Response, next: NextFunction): void => {
-  if (!req.user) {
+  const user = req.user as IUserDocument;
+  if (!user) {
     res
       .status(HTTP_STATUS.UNAUTHORIZED)
       .json(createErrorResponse(ERROR_MESSAGES.UNAUTHORIZED, 'Authentication required'));
     return;
   }
 
-  if (!req.user.isEmailVerified) {
+  if (!user.isEmailVerified) {
     res
       .status(HTTP_STATUS.FORBIDDEN)
       .json(createErrorResponse(ERROR_MESSAGES.EMAIL_NOT_VERIFIED, 'Email verification required'));
@@ -96,7 +108,7 @@ export const requireEmailVerified = (req: Request, res: Response, next: NextFunc
 /**
  * Optional authentication middleware (doesn't fail if no token)
  */
-export const optionalAuth = async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
+export const optionalAuth = async (req: AuthenticatedRequest, _res: Response, next: NextFunction): Promise<void> => {
   try {
     const authHeader = req.headers.authorization;
     const token = extractTokenFromHeader(authHeader);
@@ -122,7 +134,7 @@ export const optionalAuth = async (req: Request, _res: Response, next: NextFunct
  * Middleware to check if user owns the resource or is admin
  */
 export const requireOwnershipOrAdmin = (resourceUserIdParam = 'userId') => {
-  return (req: Request, res: Response, next: NextFunction): void => {
+  return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
     if (!req.user) {
       res
         .status(HTTP_STATUS.UNAUTHORIZED)
@@ -133,7 +145,8 @@ export const requireOwnershipOrAdmin = (resourceUserIdParam = 'userId') => {
     const resourceUserId = req.params[resourceUserIdParam];
     const currentUserId = req.userId;
 
-    if (req.user.role === 'admin' || currentUserId === resourceUserId) {
+    const user = req.user as IUserDocument;
+    if (user.role === 'admin' || currentUserId === resourceUserId) {
       next();
     } else {
       res

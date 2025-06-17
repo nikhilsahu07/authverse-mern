@@ -1,7 +1,18 @@
+export type AuthProvider = 'local' | 'google' | 'github' | 'facebook';
+
+export interface IOAuthProfile {
+  providerId: string;
+  provider: AuthProvider;
+  email: string | undefined;
+  firstName: string | undefined;
+  lastName: string | undefined;
+  profileImage: string | undefined;
+}
+
 export interface IUser {
   _id: string;
   email: string;
-  password: string;
+  password?: string; // Optional for OAuth users
   firstName: string;
   lastName: string;
   role: 'user' | 'admin';
@@ -13,6 +24,9 @@ export interface IUser {
   passwordResetExpires?: Date;
   lastLogin?: Date;
   isActive: boolean;
+  // OAuth fields
+  authProvider: AuthProvider;
+  oauthProfiles: IOAuthProfile[];
   createdAt: Date;
   updatedAt: Date;
 }

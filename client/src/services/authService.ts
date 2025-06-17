@@ -257,4 +257,34 @@ export class AuthService {
       throw new Error(handleApiError(error));
     }
   }
+
+  /**
+   * Initiate OAuth login
+   */
+  static initiateOAuthLogin(provider: 'google' | 'github' | 'facebook'): void {
+    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    window.location.href = `${baseUrl}/api/auth/${provider}`;
+  }
+
+  /**
+   * Handle OAuth callback
+   */
+  static handleOAuthCallback(token: string, refreshToken: string): LoginResponse {
+    // Store tokens in cookies
+    tokenUtils.setTokens(token, refreshToken);
+
+    // Decode user info from token
+    const user = this.getUserFromToken();
+    if (!user) {
+      throw new Error('Invalid token received from OAuth provider');
+    }
+
+    return {
+      user: user as any,
+      tokens: {
+        accessToken: token,
+        refreshToken,
+      },
+    };
+  }
 }
