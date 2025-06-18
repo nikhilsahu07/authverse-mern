@@ -304,6 +304,63 @@ export class AuthService {
   }
 
   /**
+   * Delete user account
+   */
+  static async deleteAccount(userId: string, currentPassword?: string): Promise<void> {
+    console.log('Attempting to delete account for user:', userId);
+
+    // Find user with password
+    const user = await User.findById(userId).select('+password');
+    if (!user) {
+      console.log('User not found for deletion:', userId);
+      throw createNotFoundError(ERROR_MESSAGES.USER_NOT_FOUND);
+    }
+
+    console.log('User found for deletion:', user.email, 'Auth provider:', user.authProvider);
+
+    // Check if user is OAuth user (doesn't need password verification)
+    const isOAuthUser = user.authProvider !== 'local';
+
+    if (isOAuthUser) {
+      console.log('OAuth user detected, skipping password verification');
+    } else {
+      // Local user - verify current password
+      if (!currentPassword) {
+        console.log('Password required for local user but not provided');
+        throw createUnauthorizedError('Current password is required');
+      }
+
+      if (!user.password) {
+        console.log('Local user has no password set');
+        throw createUnauthorizedError('Current password is incorrect');
+      }
+
+      const isCurrentPasswordValid = await comparePassword(currentPassword, user.password);
+      if (!isCurrentPasswordValid) {
+        console.log('Password verification failed for user:', user.email);
+        throw createUnauthorizedError('Current password is incorrect');
+      }
+
+      console.log('Password verification successful for local user');
+    }
+
+    console.log('Proceeding with account deletion');
+
+    // Revoke all refresh tokens
+    await this.logoutAll(userId);
+    console.log('All refresh tokens revoked');
+
+    // Delete the user account
+    const deletedUser = await User.findByIdAndDelete(userId);
+    if (deletedUser) {
+      console.log('User successfully deleted from database:', deletedUser.email);
+    } else {
+      console.log('User deletion failed - user not found');
+      throw createNotFoundError('User not found during deletion');
+    }
+  }
+
+  /**
    * Cleanup expired tokens
    */
   static async cleanupExpiredTokens(): Promise<void> {

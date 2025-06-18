@@ -167,6 +167,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const deleteAccount = async (currentPassword?: string): Promise<void> => {
+    try {
+      setIsLoading(true);
+
+      await AuthService.deleteAccount(currentPassword);
+
+      setUser(null);
+      setIsAuthenticated(false);
+
+      toast.success('Account deleted successfully');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Account deletion failed';
+      toast.error(errorMessage);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const refreshUser = async (): Promise<void> => {
     try {
       if (isAuthenticated) {
@@ -191,6 +210,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     updateProfile,
     changePassword,
     updateProfileImage,
+    deleteAccount,
     refreshUser,
   };
 

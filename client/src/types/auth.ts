@@ -9,6 +9,7 @@ export interface User {
   isActive: boolean;
   profileImage?: string;
   effectiveProfileImage?: string;
+  authProvider: 'local' | 'google' | 'github' | 'facebook';
   lastLogin?: string;
   createdAt: string;
   updatedAt: string;
@@ -65,6 +66,7 @@ export interface AuthContextType {
   updateProfile: (data: UpdateProfileRequest) => Promise<void>;
   changePassword: (data: ChangePasswordRequest) => Promise<void>;
   updateProfileImage: (imageData: string) => Promise<void>;
+  deleteAccount: (currentPassword?: string) => Promise<void>;
   refreshUser: () => Promise<void>;
 }
 

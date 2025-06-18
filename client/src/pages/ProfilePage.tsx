@@ -13,24 +13,32 @@ import {
   Mail,
   Save,
   Shield,
+  Trash2,
   Upload,
   User,
   X,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import type { ChangePasswordFormData, UpdateProfileFormData } from '../lib/validations';
 import { useAuth } from '../context/AuthContext';
 import { changePasswordSchema, updateProfileSchema } from '../lib/validations';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 
 const ProfilePage: React.FC = () => {
-  const { user, logout, updateProfile, changePassword, updateProfileImage } = useAuth();
+  const navigate = useNavigate();
+  const { user, logout, updateProfile, changePassword, updateProfileImage, deleteAccount } = useAuth();
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Delete account states
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [showDeletePassword, setShowDeletePassword] = useState(false);
+  const [confirmDeleteText, setConfirmDeleteText] = useState('');
 
   // Profile image states
   const [profileImage, setProfileImage] = useState<string | undefined>(
@@ -91,6 +99,35 @@ const ProfilePage: React.FC = () => {
       await logout();
     } catch (_error) {
       // Error is handled by the auth context (toast)
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    // Check if confirmation text matches
+    if (confirmDeleteText.toLowerCase() !== 'delete my account') {
+      return;
+    }
+
+    // For local users, password is required
+    const isOAuthUser = user?.authProvider !== 'local';
+    if (!isOAuthUser && !deletePassword.trim()) {
+      return;
+    }
+
+    try {
+      // Pass password only for local users
+      const password = isOAuthUser ? undefined : deletePassword;
+      await deleteAccount(password);
+      // Navigate to home page after successful deletion
+      navigate('/');
+    } catch (_error) {
+      // Error is handled by the auth context (toast)
+    } finally {
+      // Reset modal state
+      setShowDeleteModal(false);
+      setDeletePassword('');
+      setConfirmDeleteText('');
+      setShowDeletePassword(false);
     }
   };
 
@@ -564,7 +601,7 @@ const ProfilePage: React.FC = () => {
                   </div>
                 </form>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-6">
                   <div>
                     <label className="block text-blue-100/90 font-medium mb-1.5 text-sm">Password</label>
                     <p className="text-sm text-blue-100/70">••••••••••••</p>
@@ -583,11 +620,141 @@ const ProfilePage: React.FC = () => {
                       </button>
                     </div>
                   </div>
+
+                  {/* Danger Zone */}
+                  <div className="border-t border-red-500/20 pt-6">
+                    <div className="bg-red-500/10 rounded-lg p-4 border border-red-500/20">
+                      <h4 className="text-red-400 font-medium mb-2 text-sm">Danger Zone</h4>
+                      <p className="text-red-300/70 text-xs mb-4">
+                        Once you delete your account, there is no going back. Please be certain.
+                      </p>
+                      <button
+                        onClick={() => setShowDeleteModal(true)}
+                        className="inline-flex items-center px-3 py-2 border border-red-500/50 rounded-lg text-sm font-medium text-red-400 bg-red-500/20 hover:bg-red-500/30 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500/50 transition-all duration-300"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete Account
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
           </div>
         </div>
+
+        {/* Delete Account Modal */}
+        {showDeleteModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <div className="bg-slate-800 rounded-2xl shadow-2xl border border-red-500/30 p-6 max-w-md w-full">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-red-500/20 rounded-lg flex items-center justify-center">
+                    <Trash2 className="w-5 h-5 text-red-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-white">Delete Account</h3>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setDeletePassword('');
+                    setConfirmDeleteText('');
+                    setShowDeletePassword(false);
+                  }}
+                  className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-blue-100/70" />
+                </button>
+              </div>
+
+              <div className="mb-6">
+                <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-4">
+                  <h4 className="text-red-400 font-medium mb-2">⚠️ This action cannot be undone</h4>
+                  <p className="text-red-300/80 text-sm">
+                    This will permanently delete your account and remove all your data from our servers. You will not be
+                    able to recover your account or any associated data.
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-blue-100/90 font-medium mb-2 text-sm">
+                      Type <span className="text-red-400 font-semibold">delete my account</span> to confirm:
+                    </label>
+                    <input
+                      type="text"
+                      value={confirmDeleteText}
+                      onChange={(e) => setConfirmDeleteText(e.target.value)}
+                      className="w-full bg-slate-700/50 border border-slate-600/50 focus:border-red-400/50 focus:ring-red-400/20 rounded-lg px-4 py-2.5 text-white placeholder-blue-100/40 focus:outline-none focus:ring-2 transition-all text-sm"
+                      placeholder="delete my account"
+                    />
+                  </div>
+
+                  {/* Show password field only for local users */}
+                  {user?.authProvider === 'local' && (
+                    <div>
+                      <label className="block text-blue-100/90 font-medium mb-2 text-sm">
+                        Enter your current password:
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showDeletePassword ? 'text' : 'password'}
+                          value={deletePassword}
+                          onChange={(e) => setDeletePassword(e.target.value)}
+                          className="w-full bg-slate-700/50 border border-slate-600/50 focus:border-red-400/50 focus:ring-red-400/20 rounded-lg px-4 py-2.5 text-white placeholder-blue-100/40 focus:outline-none focus:ring-2 transition-all text-sm pr-10"
+                          placeholder="Enter your password"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowDeletePassword(!showDeletePassword)}
+                          className="absolute inset-y-0 right-0 pr-3 flex items-center text-blue-100/60 hover:text-blue-100 transition-colors"
+                        >
+                          {showDeletePassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Show OAuth user information */}
+                  {user?.authProvider !== 'local' && (
+                    <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                      <p className="text-blue-300 text-sm">
+                        You signed in with <span className="font-semibold capitalize">{user?.authProvider}</span>. No
+                        password verification required.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex space-x-3">
+                <button
+                  onClick={handleDeleteAccount}
+                  disabled={
+                    confirmDeleteText.toLowerCase() !== 'delete my account' ||
+                    (user?.authProvider === 'local' && !deletePassword.trim()) ||
+                    isLoading
+                  }
+                  className="flex-1 bg-red-500 hover:bg-red-600 disabled:bg-red-500/50 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg font-medium transition-all duration-300 flex items-center justify-center"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  {isLoading ? 'Deleting...' : 'Delete Account'}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setDeletePassword('');
+                    setConfirmDeleteText('');
+                    setShowDeletePassword(false);
+                  }}
+                  className="px-4 py-2 border border-slate-600/50 rounded-lg text-blue-100/90 hover:bg-slate-700/50 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Image Crop Modal */}
         {showImageModal && selectedImage && (

@@ -146,4 +146,18 @@ export class AuthController {
 
     res.status(HTTP_STATUS.OK).json(createSuccessResponse(SUCCESS_MESSAGES.PROFILE_UPDATED, user.toJSON()));
   });
+
+  static deleteAccount = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const { currentPassword } = req.body;
+    const authReq = req as AuthenticatedRequest;
+    const { userId } = authReq;
+    if (!userId) {
+      res.status(HTTP_STATUS.UNAUTHORIZED).json(createSuccessResponse(SUCCESS_MESSAGES.LOGOUT_SUCCESS));
+      return;
+    }
+
+    await AuthService.deleteAccount(userId, currentPassword);
+
+    res.status(HTTP_STATUS.OK).json(createSuccessResponse('Account deleted successfully'));
+  });
 }

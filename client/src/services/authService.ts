@@ -146,6 +146,22 @@ export class AuthService {
   }
 
   /**
+   * Delete user account
+   */
+  static async deleteAccount(currentPassword?: string): Promise<void> {
+    try {
+      // Send password only if provided (OAuth users won't have one)
+      const payload = currentPassword ? { currentPassword } : {};
+      await api.post('/auth/delete-account', payload);
+    } catch (error) {
+      throw new Error(handleApiError(error));
+    } finally {
+      // Always clear tokens after account deletion
+      tokenUtils.clearTokens();
+    }
+  }
+
+  /**
    * Refresh access token
    */
   static async refreshToken(): Promise<{ accessToken: string; refreshToken: string }> {

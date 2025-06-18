@@ -183,6 +183,19 @@ export const validatePasswordChange = (data: { currentPassword: string; newPassw
 };
 
 /**
+ * Validate delete account request
+ */
+export const validateDeleteAccount = (_data: { currentPassword?: string }): IValidationResult => {
+  // Password is optional - validation logic will handle OAuth vs local users in the service layer
+  // No validation errors for missing password since OAuth users don't need it
+
+  return {
+    isValid: true,
+    errors: [],
+  };
+};
+
+/**
  * Validate profile update request
  */
 export const validateProfileUpdate = (data: {

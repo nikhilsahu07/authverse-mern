@@ -6,6 +6,7 @@ import {
   validateRegisterRequest,
   validateLoginRequest,
   validatePasswordChangeRequest,
+  validateDeleteAccountRequest,
   validateProfileUpdateRequest,
   validateRefreshTokenRequest,
 } from '../middleware/validation.js';
@@ -51,6 +52,7 @@ router.use(authenticateToken);
 router.post('/logout', AuthController.logout);
 router.post('/logout-all', AuthController.logoutAll);
 router.post('/change-password', validatePasswordChangeRequest, AuthController.changePassword);
+router.post('/delete-account', validateDeleteAccountRequest, AuthController.deleteAccount);
 router.get('/profile', AuthController.getProfile);
 router.put('/profile', validateProfileUpdateRequest, AuthController.updateProfile);
 

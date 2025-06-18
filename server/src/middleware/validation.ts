@@ -4,6 +4,7 @@ import {
   validateLogin,
   validatePasswordChange,
   validateProfileUpdate,
+  validateDeleteAccount,
   validateEmail,
   normalizeEmail,
   sanitizeString,
@@ -191,6 +192,28 @@ export const validateTokenRequest = (req: Request, res: Response, next: NextFunc
       res
         .status(HTTP_STATUS.BAD_REQUEST)
         .json(createErrorResponse(ERROR_MESSAGES.VALIDATION_ERROR, 'Token is required'));
+      return;
+    }
+
+    next();
+  } catch (_error) {
+    res
+      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+      .json(createErrorResponse(ERROR_MESSAGES.INTERNAL_ERROR, 'Validation error'));
+  }
+};
+
+/**
+ * Middleware to validate delete account request
+ */
+export const validateDeleteAccountRequest = (req: Request, res: Response, next: NextFunction): void => {
+  try {
+    const validation = validateDeleteAccount(req.body);
+
+    if (!validation.isValid) {
+      res
+        .status(HTTP_STATUS.BAD_REQUEST)
+        .json(createErrorResponse(ERROR_MESSAGES.VALIDATION_ERROR, validation.errors.join(', ')));
       return;
     }
 
