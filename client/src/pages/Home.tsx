@@ -1,4 +1,5 @@
 import { ArrowRight, CheckCircle, Key, Lock, Shield, Star, Users } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import FloatingNavbar from '../components/FloatingNavbar';
 
 const Home = () => {
@@ -205,6 +206,32 @@ const Home = () => {
           </button>
         </div>
       </section>
+
+      {/* Footer */}
+      <footer className="py-2 sm:py-3 px-4 sm:px-6 lg:px-8 border-t border-slate-700/50">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-blue-500 rounded-lg flex items-center justify-center">
+                <Shield className="w-4 h-4 text-white" />
+              </div>
+              <span className="text-white font-semibold">AuthVerse</span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-6 text-sm text-blue-200/70">
+              <p>&copy; {new Date().getFullYear()} AuthVerse Inc. All rights reserved.</p>
+              <div className="flex space-x-4">
+                <Link to="/privacy-policy" className="hover:text-blue-200 transition-colors">
+                  Privacy Policy
+                </Link>
+                <Link to="/terms-of-service" className="hover:text-blue-200 transition-colors">
+                  Terms of Service
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };
