@@ -5,6 +5,7 @@ dotenv.config();
 import express from 'express';
 import helmet from 'helmet';
 import session from 'express-session';
+import MongoStore from 'connect-mongo';
 import passport from 'passport';
 import corsMiddleware from './config/cors.js';
 import authRoutes from './routes/auth.js';
@@ -34,6 +35,12 @@ app.use(
       secure: process.env['NODE_ENV'] === 'production',
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
     },
+    store: MongoStore.create({
+      mongoUrl: process.env['MONGODB_URI'] || 'mongodb://localhost:27017/auth',
+      collectionName: 'sessions',
+      ttl: 24 * 60 * 60, // 24 hours,
+      autoRemove: 'native', // Automatically remove expired sessions
+    }),
   }),
 );
 
