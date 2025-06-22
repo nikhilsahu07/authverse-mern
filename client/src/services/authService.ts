@@ -1,6 +1,7 @@
 import { api, handleApiError, tokenUtils } from '../lib/api';
 import type { ApiResponse } from '../lib/api';
 import type {
+  AuthTokens,
   ChangePasswordRequest,
   LoginRequest,
   LoginResponse,
@@ -16,17 +17,28 @@ export class AuthService {
    */
   static async register(userData: RegisterRequest): Promise<RegisterResponse> {
     try {
-      const response = await api.post<ApiResponse<RegisterResponse>>('/auth/register', userData);
+      const response = await api.post<
+        ApiResponse<{ user: User; tokens?: AuthTokens; requiresEmailVerification?: boolean }>
+      >('/auth/register', userData);
 
-      const { user, tokens } = response.data.data ?? { user: null, tokens: null };
-      if (!user || !tokens) {
+      const data = response.data.data;
+      if (!data || !data.user) {
         throw new Error('Invalid response from server');
       }
 
-      // Store tokens in cookies
-      tokenUtils.setTokens(tokens.accessToken, tokens.refreshToken);
+      const { user, tokens, requiresEmailVerification } = data;
 
-      return { user, tokens };
+      // Only store tokens if they are provided (for OAuth or auto-verified users)
+      if (tokens) {
+        tokenUtils.setTokens(tokens.accessToken, tokens.refreshToken);
+        return { user, tokens };
+      } else {
+        // Email verification required - don't store tokens yet
+        return {
+          user,
+          requiresEmailVerification: requiresEmailVerification ?? true,
+        };
+      }
     } catch (error) {
       throw new Error(handleApiError(error));
     }
@@ -253,11 +265,20 @@ export class AuthService {
   }
 
   /**
-   * Verify email with token
+   * Verify email with token (magic link)
    */
-  static async verifyEmail(token: string): Promise<void> {
+  static async verifyEmail(token: string): Promise<LoginResponse> {
     try {
-      await api.post('/auth/verify-email', { token });
+      const response = await api.post<ApiResponse<LoginResponse>>('/auth/verify-email', { token });
+      const data = response.data.data;
+      if (!data) {
+        throw new Error('Invalid response from server');
+      }
+
+      // Store tokens in cookies
+      tokenUtils.setTokens(data.tokens.accessToken, data.tokens.refreshToken);
+
+      return data;
     } catch (error) {
       throw new Error(handleApiError(error));
     }
@@ -269,6 +290,26 @@ export class AuthService {
   static async resendEmailVerification(email: string): Promise<void> {
     try {
       await api.post('/auth/resend-verification', { email });
+    } catch (error) {
+      throw new Error(handleApiError(error));
+    }
+  }
+
+  /**
+   * Verify email with OTP
+   */
+  static async verifyEmailWithOTP(email: string, otp: string): Promise<LoginResponse> {
+    try {
+      const response = await api.post<ApiResponse<LoginResponse>>('/auth/verify-email-otp', { email, otp });
+      const data = response.data.data;
+      if (!data) {
+        throw new Error('Invalid response from server');
+      }
+
+      // Store tokens in cookies
+      tokenUtils.setTokens(data.tokens.accessToken, data.tokens.refreshToken);
+
+      return data;
     } catch (error) {
       throw new Error(handleApiError(error));
     }
@@ -296,7 +337,7 @@ export class AuthService {
     }
 
     return {
-      user: user as any,
+      user: user as User,
       tokens: {
         accessToken: token,
         refreshToken,

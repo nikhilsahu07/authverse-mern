@@ -8,6 +8,7 @@ import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';
 import ProfilePage from './pages/ProfilePage';
 import OAuthSuccess from './pages/OAuthSuccess';
+import EmailVerificationPage from './pages/EmailVerificationPage';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
 
@@ -40,6 +41,9 @@ function App() {
 
             {/* OAuth callback route */}
             <Route path="/auth/oauth-success" element={<OAuthSuccess />} />
+
+            {/* Email verification route */}
+            <Route path="/auth/verify-email" element={<EmailVerificationPage />} />
 
             {/* Legal pages */}
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />

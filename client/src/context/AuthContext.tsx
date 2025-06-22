@@ -2,12 +2,14 @@ import React, { type ReactNode, createContext, useContext, useEffect, useState }
 import toast from 'react-hot-toast';
 import { AuthService } from '../services/authService';
 import { tokenUtils } from '../lib/api';
+import { deduplicateOperation } from '../utils/deduplication';
 import FullPageLoading from '../components/ui/FullPageLoading';
 import type {
   AuthContextType,
   ChangePasswordRequest,
   LoginRequest,
   RegisterRequest,
+  RegisterResponse,
   UpdateProfileRequest,
   User,
 } from '../types/auth';
@@ -76,22 +78,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const register = async (userData: RegisterRequest): Promise<void> => {
+  const register = async (userData: RegisterRequest): Promise<RegisterResponse> => {
     try {
-      setIsLoading(true);
-
       const response = await AuthService.register(userData);
 
-      setUser(response.user);
-      setIsAuthenticated(true);
+      if (response.requiresEmailVerification) {
+        // Don't set user as authenticated if email verification is required
+        setUser(response.user);
+        setIsAuthenticated(false);
+        // Don't show toast here - let the popup handle the UX
+      } else if (response.tokens) {
+        // OAuth or auto-verified users
+        setUser(response.user);
+        setIsAuthenticated(true);
+        toast.success('Account created successfully!');
+      }
 
-      toast.success('Account created successfully!');
+      return response;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Registration failed';
       toast.error(errorMessage);
       throw error;
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -200,6 +207,52 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const verifyEmail = async (token: string): Promise<void> => {
+    return deduplicateOperation(`verify-email-${token}`, async () => {
+      try {
+        setIsLoading(true);
+
+        const response = await AuthService.verifyEmail(token);
+
+        setUser(response.user);
+        setIsAuthenticated(true);
+
+        toast.success('Email verified successfully! Welcome to AuthVerse!');
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Email verification failed';
+        toast.error(errorMessage);
+        throw error;
+      } finally {
+        setIsLoading(false);
+      }
+    });
+  };
+
+  const verifyEmailWithOTP = async (email: string, otp: string): Promise<void> => {
+    return deduplicateOperation(`verify-otp-${email}-${otp}`, async () => {
+      try {
+        const response = await AuthService.verifyEmailWithOTP(email, otp);
+        setUser(response.user);
+        setIsAuthenticated(true);
+        toast.success('Email verified successfully!');
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'OTP verification failed';
+        throw new Error(errorMessage);
+      }
+    });
+  };
+
+  const resendEmailVerification = async (email: string): Promise<void> => {
+    try {
+      await AuthService.resendEmailVerification(email);
+      toast.success('Verification email sent! Please check your inbox.');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to resend verification email';
+      toast.error(errorMessage);
+      throw error;
+    }
+  };
+
   const contextValue: AuthContextType = {
     user,
     isAuthenticated,
@@ -212,6 +265,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     updateProfileImage,
     deleteAccount,
     refreshUser,
+    verifyEmail,
+    verifyEmailWithOTP,
+    resendEmailVerification,
   };
 
   return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>;

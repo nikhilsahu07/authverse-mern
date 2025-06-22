@@ -14,21 +14,28 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   requireAuth = true,
   redirectTo = '/signin',
 }) => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const location = useLocation();
 
-  // Show loading spinner while checking authentication
   if (isLoading) {
     return <FullPageLoading message="Checking authentication..." />;
   }
 
-  // If route requires auth but user is not authenticated
+  // Redirect unauthenticated users to signin
   if (requireAuth && !isAuthenticated) {
     return <Navigate to={redirectTo} state={{ from: location }} replace />;
   }
 
-  // If route is for guests only but user is authenticated
+  // Handle guest-only routes (login, register)
   if (!requireAuth && isAuthenticated) {
+    const isSignupPage = location.pathname === '/signup';
+    const isEmailNotVerified = user && !user.isEmailVerified;
+
+    // Allow staying on signup page if email verification is pending
+    if (isSignupPage && isEmailNotVerified) {
+      return <>{children}</>;
+    }
+
     return <Navigate to="/dashboard" replace />;
   }
 

@@ -6,6 +6,14 @@ import toast from 'react-hot-toast';
 // API Configuration
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
+// Global flag to prevent redirects during OTP verification
+let isOTPVerificationInProgress = false;
+
+// Export functions to control the flag
+export const setOTPVerificationInProgress = (inProgress: boolean) => {
+  isOTPVerificationInProgress = inProgress;
+};
+
 // Create axios instance
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -87,7 +95,14 @@ api.interceptors.response.use(
     };
     const originalRequest = error.config as RetryableRequest;
 
-    if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
+    // Check if this is an OTP verification request - don't redirect on these errors
+    const isOTPVerification =
+      originalRequest?.url?.includes('/verify-email-otp') ||
+      originalRequest?.url?.includes('/verify-email') ||
+      originalRequest?.url?.includes('/resend-verification') ||
+      originalRequest?.url?.includes('/register');
+
+    if (error.response?.status === 401 && originalRequest && !originalRequest._retry && !isOTPVerification) {
       originalRequest._retry = true;
 
       const refreshToken = tokenUtils.getRefreshToken();
@@ -115,8 +130,8 @@ api.interceptors.response.use(
           window.location.href = '/signin';
           return Promise.reject(refreshError);
         }
-      } else {
-        // No valid refresh token, clear tokens and redirect
+      } else if (!isOTPVerification && !isOTPVerificationInProgress) {
+        // No valid refresh token, clear tokens and redirect (but not for OTP verification)
         tokenUtils.clearTokens();
         toast.error('Session expired. Please login again.');
         window.location.href = '/signin';

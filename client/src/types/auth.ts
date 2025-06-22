@@ -52,7 +52,8 @@ export interface LoginResponse {
 
 export interface RegisterResponse {
   user: User;
-  tokens: AuthTokens;
+  tokens?: AuthTokens;
+  requiresEmailVerification?: boolean;
 }
 
 // Auth context types
@@ -61,13 +62,16 @@ export interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (credentials: LoginRequest) => Promise<void>;
-  register: (userData: RegisterRequest) => Promise<void>;
+  register: (userData: RegisterRequest) => Promise<RegisterResponse>;
   logout: () => Promise<void>;
   updateProfile: (data: UpdateProfileRequest) => Promise<void>;
   changePassword: (data: ChangePasswordRequest) => Promise<void>;
   updateProfileImage: (imageData: string) => Promise<void>;
   deleteAccount: (currentPassword?: string) => Promise<void>;
   refreshUser: () => Promise<void>;
+  verifyEmail: (token: string) => Promise<void>;
+  verifyEmailWithOTP: (email: string, otp: string) => Promise<void>;
+  resendEmailVerification: (email: string) => Promise<void>;
 }
 
 // Form validation types
