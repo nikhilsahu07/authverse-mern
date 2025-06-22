@@ -246,3 +246,74 @@ export const validateRefreshTokenRequest = (req: Request, res: Response, next: N
       .json(createErrorResponse(ERROR_MESSAGES.INTERNAL_ERROR, 'Validation error'));
   }
 };
+
+/**
+ * Middleware to validate email verification with token request
+ */
+export const validateVerifyEmailRequest = (req: Request, res: Response, next: NextFunction): void => {
+  try {
+    const { token } = req.body;
+
+    if (!token || typeof token !== 'string') {
+      res
+        .status(HTTP_STATUS.BAD_REQUEST)
+        .json(createErrorResponse(ERROR_MESSAGES.VALIDATION_ERROR, 'Verification token is required'));
+      return;
+    }
+
+    next();
+  } catch (_error) {
+    res
+      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+      .json(createErrorResponse(ERROR_MESSAGES.INTERNAL_ERROR, 'Validation error'));
+  }
+};
+
+/**
+ * Middleware to validate email verification with OTP request
+ */
+export const validateVerifyEmailOTPRequest = (req: Request, res: Response, next: NextFunction): void => {
+  try {
+    const { email, otp } = req.body;
+
+    // Sanitize email
+    if (email) {
+      req.body.email = normalizeEmail(email);
+    }
+
+    if (!email || typeof email !== 'string') {
+      res
+        .status(HTTP_STATUS.BAD_REQUEST)
+        .json(createErrorResponse(ERROR_MESSAGES.VALIDATION_ERROR, 'Email is required'));
+      return;
+    }
+
+    if (!otp || typeof otp !== 'string') {
+      res.status(HTTP_STATUS.BAD_REQUEST).json(createErrorResponse(ERROR_MESSAGES.VALIDATION_ERROR, 'OTP is required'));
+      return;
+    }
+
+    // Validate OTP format (6 digits)
+    if (!/^\d{6}$/.test(otp)) {
+      res
+        .status(HTTP_STATUS.BAD_REQUEST)
+        .json(createErrorResponse(ERROR_MESSAGES.VALIDATION_ERROR, 'OTP must be 6 digits'));
+      return;
+    }
+
+    // Validate email format
+    const emailValidation = validateEmail(email);
+    if (!emailValidation.isValid) {
+      res
+        .status(HTTP_STATUS.BAD_REQUEST)
+        .json(createErrorResponse(ERROR_MESSAGES.VALIDATION_ERROR, emailValidation.errors.join(', ')));
+      return;
+    }
+
+    next();
+  } catch (_error) {
+    res
+      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+      .json(createErrorResponse(ERROR_MESSAGES.INTERNAL_ERROR, 'Validation error'));
+  }
+};

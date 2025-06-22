@@ -9,6 +9,7 @@ export interface IUserDocument extends IUser, Document {
   updatedAt: Date;
   effectiveProfileImage?: string;
   isEmailVerificationTokenValid: () => boolean;
+  isEmailVerificationOTPValid: () => boolean;
   isPasswordResetTokenValid: () => boolean;
   clearVerificationTokens: () => void;
   clearPasswordResetTokens: () => void;
@@ -18,6 +19,7 @@ export interface IUserDocument extends IUser, Document {
 interface IUserModel extends mongoose.Model<IUserDocument> {
   findByEmail: (email: string) => mongoose.Query<IUserDocument | null, IUserDocument>;
   findByEmailVerificationToken: (token: string) => mongoose.Query<IUserDocument | null, IUserDocument>;
+  findByEmailVerificationOTP: (email: string, otp: string) => mongoose.Query<IUserDocument | null, IUserDocument>;
   findByPasswordResetToken: (token: string) => mongoose.Query<IUserDocument | null, IUserDocument>;
   findByOAuthProvider: (provider: string, providerId: string) => mongoose.Query<IUserDocument | null, IUserDocument>;
 }
@@ -90,6 +92,14 @@ const userSchema = new Schema<IUserDocument>(
       type: Date,
       default: undefined,
     },
+    emailVerificationOTP: {
+      type: String,
+      default: undefined,
+    },
+    emailVerificationOTPExpires: {
+      type: Date,
+      default: undefined,
+    },
     passwordResetToken: {
       type: String,
       default: undefined,
@@ -138,6 +148,7 @@ const userSchema = new Schema<IUserDocument>(
         delete ret['__v'];
         delete ret['password'];
         delete ret['emailVerificationToken'];
+        delete ret['emailVerificationOTP'];
         delete ret['passwordResetToken'];
         // Include effective profile image
         ret['effectiveProfileImage'] = (_doc as IUserDocument).effectiveProfileImage;
@@ -155,6 +166,7 @@ const userSchema = new Schema<IUserDocument>(
 
 // Indexes for better query performance
 userSchema.index({ emailVerificationToken: 1 });
+userSchema.index({ emailVerificationOTP: 1 });
 userSchema.index({ passwordResetToken: 1 });
 userSchema.index({ isActive: 1 });
 userSchema.index({ createdAt: -1 });
@@ -194,6 +206,11 @@ userSchema.methods['isEmailVerificationTokenValid'] = function (): boolean {
   return this['emailVerificationExpires'] && this['emailVerificationExpires'] > new Date();
 };
 
+// Instance method to check if email verification OTP is valid
+userSchema.methods['isEmailVerificationOTPValid'] = function (): boolean {
+  return this['emailVerificationOTPExpires'] && this['emailVerificationOTPExpires'] > new Date();
+};
+
 // Instance method to check if password reset token is valid
 userSchema.methods['isPasswordResetTokenValid'] = function (): boolean {
   return this['passwordResetExpires'] && this['passwordResetExpires'] > new Date();
@@ -203,6 +220,8 @@ userSchema.methods['isPasswordResetTokenValid'] = function (): boolean {
 userSchema.methods['clearVerificationTokens'] = function (): void {
   delete this['emailVerificationToken'];
   delete this['emailVerificationExpires'];
+  delete this['emailVerificationOTP'];
+  delete this['emailVerificationOTPExpires'];
 };
 
 // Instance method to clear password reset tokens
@@ -223,6 +242,18 @@ userSchema.statics['findByEmailVerificationToken'] = function (
   return this.findOne({
     emailVerificationToken: token,
     emailVerificationExpires: { $gt: new Date() },
+  });
+};
+
+// Static method to find user by email verification OTP
+userSchema.statics['findByEmailVerificationOTP'] = function (
+  email: string,
+  otp: string,
+): mongoose.Query<IUserDocument | null, IUserDocument> {
+  return this.findOne({
+    email: email.toLowerCase().trim(),
+    emailVerificationOTP: otp,
+    emailVerificationOTPExpires: { $gt: new Date() },
   });
 };
 

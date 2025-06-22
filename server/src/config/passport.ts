@@ -1,7 +1,11 @@
 import passport from 'passport';
-import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
-import { Strategy as GithubStrategy } from 'passport-github2';
-import { Strategy as FacebookStrategy } from 'passport-facebook';
+import {
+  Strategy as GoogleStrategy,
+  type Profile as GoogleProfile,
+  type VerifyCallback,
+} from 'passport-google-oauth20';
+import { Strategy as GithubStrategy, type Profile as GitHubProfile } from 'passport-github2';
+import { Strategy as FacebookStrategy, type Profile as FacebookProfile } from 'passport-facebook';
 import User, { type IUserDocument } from '../models/User.js';
 import { generateTokens } from '../utils/jwt.js';
 import type { Tokens } from '../types/common.types.js';
@@ -17,8 +21,11 @@ interface OAuthProfileData {
   profileImage: string | undefined;
 }
 
+// Union type for all OAuth profiles
+type OAuthProfile = GoogleProfile | GitHubProfile | FacebookProfile;
+
 // Helper function to extract user data from OAuth profiles
-const extractUserData = (profile: any, provider: AuthProvider): OAuthProfileData => {
+const extractUserData = (profile: OAuthProfile, provider: AuthProvider): OAuthProfileData => {
   const email = profile.emails?.[0]?.value;
   let firstName = '';
   let lastName = '';
@@ -29,7 +36,7 @@ const extractUserData = (profile: any, provider: AuthProvider): OAuthProfileData
     lastName = profile.name?.familyName || '';
     profileImage = profile.photos?.[0]?.value || '';
   } else if (provider === 'github') {
-    const fullName = profile.displayName || profile.username || '';
+    const fullName = profile.displayName || (profile as GitHubProfile).username || '';
     const nameParts = fullName.split(' ');
     firstName = nameParts[0] || '';
     lastName = nameParts.slice(1).join(' ') || '';
@@ -52,16 +59,15 @@ const extractUserData = (profile: any, provider: AuthProvider): OAuthProfileData
 
 // Helper function to handle OAuth authentication
 const handleOAuthAuth = async (
-  profile: any,
+  profile: OAuthProfile,
   provider: AuthProvider,
 ): Promise<{ user: IUserDocument; tokens: Tokens }> => {
   const userData = extractUserData(profile, provider);
 
-  // First, try to find user by OAuth provider
+  // Try to find user by OAuth provider
   let user = await User.findByOAuthProvider(provider, userData.providerId);
 
   if (user) {
-    // User exists, update last login
     user.lastLogin = new Date();
     await user.save();
   } else {
@@ -81,9 +87,7 @@ const handleOAuthAuth = async (
         profileImage: userData.profileImage,
       });
       user.lastLogin = new Date();
-      // Mark email as verified for OAuth users
       user.isEmailVerified = true;
-      // Set profile image from OAuth if user doesn't have a custom one
       if (!user.profileImage && userData.profileImage) {
         user.profileImage = userData.profileImage;
       }
@@ -94,9 +98,9 @@ const handleOAuthAuth = async (
         email: userData.email,
         firstName: userData.firstName || 'User',
         lastName: userData.lastName || '',
-        profileImage: userData.profileImage, // Set Google profile image as main profile image
+        profileImage: userData.profileImage,
         authProvider: userData.provider,
-        isEmailVerified: true, // OAuth users are automatically verified
+        isEmailVerified: true,
         isActive: true,
         lastLogin: new Date(),
         oauthProfiles: [
@@ -135,13 +139,13 @@ export const configurePassport = (): void => {
           clientSecret: process.env['GOOGLE_CLIENT_SECRET'],
           callbackURL: process.env['GOOGLE_CALLBACK_URL'] || '/api/auth/google/callback',
         },
-        (_accessToken: string, _refreshToken: string, profile: any, done: any) => {
+        (_accessToken: string, _refreshToken: string, profile: GoogleProfile, done: VerifyCallback) => {
           handleOAuthAuth(profile, 'google')
             .then((result) => {
               done(null, result);
             })
             .catch((error) => {
-              done(error, null);
+              done(error);
             });
         },
       ),
@@ -159,13 +163,13 @@ export const configurePassport = (): void => {
           clientSecret: process.env['GITHUB_CLIENT_SECRET'],
           callbackURL: process.env['GITHUB_CALLBACK_URL'] || '/api/auth/github/callback',
         },
-        (_accessToken: string, _refreshToken: string, profile: any, done: any) => {
+        (_accessToken: string, _refreshToken: string, profile: GitHubProfile, done: VerifyCallback) => {
           handleOAuthAuth(profile, 'github')
             .then((result) => {
               done(null, result);
             })
             .catch((error) => {
-              done(error, null);
+              done(error);
             });
         },
       ),
@@ -184,13 +188,13 @@ export const configurePassport = (): void => {
           callbackURL: process.env['FACEBOOK_CALLBACK_URL'] || '/api/auth/facebook/callback',
           profileFields: ['id', 'emails', 'name', 'picture'],
         },
-        (_accessToken: string, _refreshToken: string, profile: any, done: any) => {
+        (_accessToken: string, _refreshToken: string, profile: FacebookProfile, done: VerifyCallback) => {
           handleOAuthAuth(profile, 'facebook')
             .then((result) => {
               done(null, result);
             })
             .catch((error) => {
-              done(error, null);
+              done(error);
             });
         },
       ),
@@ -198,16 +202,6 @@ export const configurePassport = (): void => {
   } else {
     throw new Error('Facebook OAuth strategy not registered - missing environment variables');
   }
-
-  // Serialize user for session
-  passport.serializeUser((user: any, done: any) => {
-    done(null, user);
-  });
-
-  // Deserialize user from session
-  passport.deserializeUser((user: any, done: any) => {
-    done(null, user);
-  });
 };
 
 export default passport;

@@ -21,7 +21,7 @@ function App() {
             {/* Public routes */}
             <Route path="/" element={<Home />} />
 
-            {/* Guest-only routes (redirect to dashboard if authenticated) */}
+            {/* Guest-only routes */}
             <Route
               path="/signin"
               element={
@@ -49,7 +49,7 @@ function App() {
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/terms-of-service" element={<TermsOfService />} />
 
-            {/* Protected routes (require authentication) */}
+            {/* Protected routes */}
             <Route
               path="/dashboard"
               element={

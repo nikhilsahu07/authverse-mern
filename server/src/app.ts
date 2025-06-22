@@ -3,11 +3,12 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import express from 'express';
+import cors from 'cors';
 import helmet from 'helmet';
 import session from 'express-session';
 import MongoStore from 'connect-mongo';
 import passport from 'passport';
-import corsMiddleware from './config/cors.js';
+import { corsOptions } from './config/cors.js';
 import authRoutes from './routes/auth.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { createSuccessResponse } from './utils/helpers.js';
@@ -19,7 +20,7 @@ const app = express();
 app.use(helmet());
 
 // CORS middleware
-app.use(corsMiddleware);
+app.use(cors(corsOptions));
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));

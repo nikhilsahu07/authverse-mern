@@ -1,4 +1,4 @@
-import type { Request, Response, NextFunction } from 'express';
+import type { Request, Response, NextFunction, RequestHandler } from 'express';
 import { verifyAccessToken, extractTokenFromHeader } from '../utils/jwt.js';
 import User, { type IUserDocument } from '../models/User.js';
 import { createErrorResponse } from '../utils/helpers.js';
@@ -6,7 +6,7 @@ import { HTTP_STATUS, ERROR_MESSAGES } from '../utils/constants.js';
 
 // Extend Request interface for auth
 interface AuthenticatedRequest extends Request {
-  user?: any;
+  user?: IUserDocument;
   userId?: string;
 }
 
@@ -15,52 +15,60 @@ type ErrorMessage = (typeof ERROR_MESSAGES)[keyof typeof ERROR_MESSAGES];
 /**
  * Middleware to authenticate JWT tokens
  */
-export const authenticateToken = async (
-  req: AuthenticatedRequest,
-  res: Response,
-  next: NextFunction,
-): Promise<void> => {
-  try {
-    const authHeader = req.headers.authorization;
-    const token = extractTokenFromHeader(authHeader);
+export const authenticateToken: RequestHandler = (req, res, next) => {
+  const authReq = req as AuthenticatedRequest;
 
-    if (!token) {
-      res.status(HTTP_STATUS.UNAUTHORIZED).json(createErrorResponse(ERROR_MESSAGES.UNAUTHORIZED, 'No token provided'));
-      return;
-    }
+  const authenticate = async (): Promise<void> => {
+    try {
+      const authHeader = authReq.headers.authorization;
+      const token = extractTokenFromHeader(authHeader);
 
-    // Verify the token
-    const decoded = verifyAccessToken(token);
+      if (!token) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse(ERROR_MESSAGES.UNAUTHORIZED, 'No token provided'));
+        return;
+      }
 
-    // Find the user
-    const user = await User.findById(decoded.userId);
-    if (!user || !user.isActive) {
+      // Verify the token
+      const decoded = verifyAccessToken(token);
+
+      // Find the user
+      const user = await User.findById(decoded.userId);
+      if (!user || !user.isActive) {
+        res
+          .status(HTTP_STATUS.UNAUTHORIZED)
+          .json(createErrorResponse(ERROR_MESSAGES.USER_NOT_FOUND, 'User not found or inactive'));
+        return;
+      }
+
+      // Attach user to request
+      authReq.user = user;
+      authReq.userId = user._id.toString();
+
+      next();
+    } catch (error) {
+      let errorMessage: ErrorMessage = ERROR_MESSAGES.INVALID_TOKEN;
+
+      if (error instanceof Error) {
+        if (error.message.includes('expired')) {
+          errorMessage = ERROR_MESSAGES.TOKEN_EXPIRED;
+        } else if (error.message.includes('invalid')) {
+          errorMessage = ERROR_MESSAGES.INVALID_TOKEN;
+        }
+      }
+
       res
         .status(HTTP_STATUS.UNAUTHORIZED)
-        .json(createErrorResponse(ERROR_MESSAGES.USER_NOT_FOUND, 'User not found or inactive'));
-      return;
+        .json(createErrorResponse(errorMessage, error instanceof Error ? error.message : 'Authentication failed'));
     }
+  };
 
-    // Attach user to request
-    req.user = user;
-    req.userId = user._id.toString();
-
-    next();
-  } catch (error) {
-    let errorMessage: ErrorMessage = ERROR_MESSAGES.INVALID_TOKEN;
-
-    if (error instanceof Error) {
-      if (error.message.includes('expired')) {
-        errorMessage = ERROR_MESSAGES.TOKEN_EXPIRED;
-      } else if (error.message.includes('invalid')) {
-        errorMessage = ERROR_MESSAGES.INVALID_TOKEN;
-      }
-    }
-
+  authenticate().catch((error) => {
     res
-      .status(HTTP_STATUS.UNAUTHORIZED)
-      .json(createErrorResponse(errorMessage, error instanceof Error ? error.message : 'Authentication failed'));
-  }
+      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+      .json(createErrorResponse(ERROR_MESSAGES.INTERNAL_ERROR, error.message));
+  });
 };
 
 /**
@@ -108,26 +116,35 @@ export const requireEmailVerified = (req: Request, res: Response, next: NextFunc
 /**
  * Optional authentication middleware (doesn't fail if no token)
  */
-export const optionalAuth = async (req: AuthenticatedRequest, _res: Response, next: NextFunction): Promise<void> => {
-  try {
-    const authHeader = req.headers.authorization;
-    const token = extractTokenFromHeader(authHeader);
+export const optionalAuth: RequestHandler = (req, _res, next) => {
+  const authReq = req as AuthenticatedRequest;
 
-    if (token) {
-      const decoded = verifyAccessToken(token);
-      const user = await User.findById(decoded.userId);
+  const authenticate = async (): Promise<void> => {
+    try {
+      const authHeader = authReq.headers.authorization;
+      const token = extractTokenFromHeader(authHeader);
 
-      if (user && user.isActive) {
-        req.user = user;
-        req.userId = user._id.toString();
+      if (token) {
+        const decoded = verifyAccessToken(token);
+        const user = await User.findById(decoded.userId);
+
+        if (user && user.isActive) {
+          authReq.user = user;
+          authReq.userId = user._id.toString();
+        }
       }
-    }
 
+      next();
+    } catch (_error) {
+      // Continue without authentication if token is invalid
+      next();
+    }
+  };
+
+  authenticate().catch(() => {
+    // Continue without authentication if there's an error
     next();
-  } catch (_error) {
-    // Continue without authentication if token is invalid
-    next();
-  }
+  });
 };
 
 /**
@@ -145,8 +162,7 @@ export const requireOwnershipOrAdmin = (resourceUserIdParam = 'userId') => {
     const resourceUserId = req.params[resourceUserIdParam];
     const currentUserId = req.userId;
 
-    const user = req.user as IUserDocument;
-    if (user.role === 'admin' || currentUserId === resourceUserId) {
+    if (req.user.role === 'admin' || currentUserId === resourceUserId) {
       next();
     } else {
       res

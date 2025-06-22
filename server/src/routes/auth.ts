@@ -9,6 +9,9 @@ import {
   validateDeleteAccountRequest,
   validateProfileUpdateRequest,
   validateRefreshTokenRequest,
+  validateVerifyEmailRequest,
+  validateVerifyEmailOTPRequest,
+  validateEmailRequest,
 } from '../middleware/validation.js';
 
 const router = Router();
@@ -17,6 +20,11 @@ const router = Router();
 router.post('/register', validateRegisterRequest, AuthController.register);
 router.post('/login', validateLoginRequest, AuthController.login);
 router.post('/refresh-token', validateRefreshTokenRequest, AuthController.refreshToken);
+
+// Email verification routes (public)
+router.post('/verify-email', validateVerifyEmailRequest, AuthController.verifyEmail);
+router.post('/verify-email-otp', validateVerifyEmailOTPRequest, AuthController.verifyEmailWithOTP);
+router.post('/resend-verification', validateEmailRequest, AuthController.resendEmailVerification);
 
 // OAuth routes
 // Google OAuth

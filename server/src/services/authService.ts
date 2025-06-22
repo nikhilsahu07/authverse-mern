@@ -1,12 +1,22 @@
 import User, { type IUserDocument } from '../models/User.js';
 import RefreshToken from '../models/RefreshToken.js';
-import { hashPassword, comparePassword } from '../utils/crypto.js';
-import { generateTokens, verifyRefreshToken } from '../utils/jwt.js';
+import { hashPassword, comparePassword, generateOTP } from '../utils/crypto.js';
+import {
+  generateTokens,
+  verifyRefreshToken,
+  generateEmailVerificationToken,
+  verifyEmailVerificationToken,
+} from '../utils/jwt.js';
 import { normalizeEmail } from '../utils/validation.js';
 import type { JWTPayload } from '../types/common.types.js';
 import type { LoginResponse, Tokens } from '../types/auth.types.js';
 import { ERROR_MESSAGES } from '../utils/constants.js';
 import { createConflictError, createUnauthorizedError, createNotFoundError } from '../middleware/errorHandler.js';
+import { EmailService } from './emailService.js';
+
+// Simple in-memory cache to track recent welcome emails (prevent duplicates)
+const recentWelcomeEmails = new Map<string, number>();
+const WELCOME_EMAIL_COOLDOWN = 60000; // 1 minute cooldown
 
 export class AuthService {
   /**
@@ -17,7 +27,7 @@ export class AuthService {
     password: string;
     firstName: string;
     lastName: string;
-  }): Promise<{ user: IUserDocument; tokens: Tokens }> {
+  }): Promise<{ user: IUserDocument }> {
     const { email, password, firstName, lastName } = userData;
 
     // Check if user already exists
@@ -29,29 +39,48 @@ export class AuthService {
     // Hash password
     const hashedPassword = await hashPassword(password);
 
+    // Generate OTP and expiration
+    const otp = generateOTP(6);
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    // Generate email verification token for magic link
+    const verificationToken = generateEmailVerificationToken({
+      userId: 'temp', // Will be updated after user creation
+      email: normalizeEmail(email),
+    });
+
     // Create user
     const user = new User({
       email: normalizeEmail(email),
       password: hashedPassword,
       firstName,
       lastName,
+      isEmailVerified: false,
+      emailVerificationOTP: otp,
+      emailVerificationOTPExpires: otpExpires,
+      emailVerificationToken: verificationToken,
+      emailVerificationExpires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
     });
 
     await user.save();
 
-    // Generate tokens
-    const payload: JWTPayload = {
+    // Update verification token with actual user ID
+    const updatedVerificationToken = generateEmailVerificationToken({
       userId: user._id.toString(),
       email: user.email,
-      role: user.role,
-    };
+    });
 
-    const tokens = generateTokens(payload);
+    user.emailVerificationToken = updatedVerificationToken;
+    await user.save();
 
-    // Save refresh token
-    await this.saveRefreshToken(user._id.toString(), tokens.refreshToken.token);
+    // Create magic link
+    const clientUrl = process.env['CLIENT_URL'] || 'http://localhost:5173';
+    const magicLink = `${clientUrl}/auth/verify-email?token=${updatedVerificationToken}`;
 
-    return { user, tokens };
+    // Send verification email
+    await EmailService.sendVerificationEmail(user.email, user.firstName, otp, magicLink);
+
+    return { user };
   }
 
   /**
@@ -250,24 +279,125 @@ export class AuthService {
   }
 
   /**
-   * Verify email with token
+   * Verify email with token (magic link)
    */
-  static async verifyEmail(token: string): Promise<void> {
-    const user = await User.findByEmailVerificationToken(token);
-    if (!user) {
+  static async verifyEmail(token: string): Promise<{ user: IUserDocument; tokens: Tokens }> {
+    try {
+      // First verify the JWT token structure and extract payload
+      const decoded = verifyEmailVerificationToken(token);
+
+      // Find user by the decoded information and verify the stored token matches
+      const user = await User.findByEmailVerificationToken(token);
+      if (!user) {
+        throw createUnauthorizedError(ERROR_MESSAGES.EMAIL_VERIFICATION_INVALID);
+      }
+
+      // Double-check user ID matches the token
+      if (user._id.toString() !== decoded.userId) {
+        throw createUnauthorizedError(ERROR_MESSAGES.EMAIL_VERIFICATION_INVALID);
+      }
+
+      // Check if user is already verified (prevent duplicate processing)
+      if (user.isEmailVerified) {
+        // Still generate new tokens for login
+        const payload: JWTPayload = {
+          userId: user._id.toString(),
+          email: user.email,
+          role: user.role,
+        };
+
+        const tokens = generateTokens(payload);
+        await this.saveRefreshToken(user._id.toString(), tokens.refreshToken.token);
+
+        return { user, tokens };
+      }
+
+      // Mark email as verified
+      user.isEmailVerified = true;
+      user.clearVerificationTokens();
+      await user.save();
+
+      // Generate tokens for automatic login
+      const payload: JWTPayload = {
+        userId: user._id.toString(),
+        email: user.email,
+        role: user.role,
+      };
+
+      const tokens = generateTokens(payload);
+
+      // Save refresh token
+      await this.saveRefreshToken(user._id.toString(), tokens.refreshToken.token);
+
+      // Send welcome email only for first-time verification (with deduplication)
+      try {
+        const now = Date.now();
+        const lastWelcomeTime = recentWelcomeEmails.get(user.email);
+
+        if (!lastWelcomeTime || now - lastWelcomeTime > WELCOME_EMAIL_COOLDOWN) {
+          await EmailService.sendWelcomeEmail(user.email, user.firstName);
+          recentWelcomeEmails.set(user.email, now);
+
+          // Clean up old entries periodically
+          if (recentWelcomeEmails.size > 1000) {
+            const cutoff = now - WELCOME_EMAIL_COOLDOWN;
+            for (const [email, timestamp] of recentWelcomeEmails.entries()) {
+              if (timestamp < cutoff) {
+                recentWelcomeEmails.delete(email);
+              }
+            }
+          }
+        }
+      } catch (error) {
+        // Don't throw error for welcome email
+      }
+
+      return { user, tokens };
+    } catch (error) {
       throw createUnauthorizedError(ERROR_MESSAGES.EMAIL_VERIFICATION_INVALID);
+    }
+  }
+
+  /**
+   * Verify email with OTP
+   */
+  static async verifyEmailWithOTP(email: string, otp: string): Promise<{ user: IUserDocument; tokens: Tokens }> {
+    const user = await User.findByEmailVerificationOTP(email, otp);
+    if (!user) {
+      throw createUnauthorizedError('Invalid or expired OTP');
     }
 
     // Mark email as verified
     user.isEmailVerified = true;
     user.clearVerificationTokens();
     await user.save();
+
+    // Generate tokens for automatic login
+    const payload: JWTPayload = {
+      userId: user._id.toString(),
+      email: user.email,
+      role: user.role,
+    };
+
+    const tokens = generateTokens(payload);
+
+    // Save refresh token
+    await this.saveRefreshToken(user._id.toString(), tokens.refreshToken.token);
+
+    // Send welcome email
+    try {
+      await EmailService.sendWelcomeEmail(user.email, user.firstName);
+    } catch (error) {
+      // Don't throw error for welcome email
+    }
+
+    return { user, tokens };
   }
 
   /**
    * Resend email verification
    */
-  static async resendEmailVerification(email: string): Promise<string> {
+  static async resendEmailVerification(email: string): Promise<void> {
     const user = await User.findByEmail(email);
     if (!user) {
       throw createNotFoundError(ERROR_MESSAGES.USER_NOT_FOUND);
@@ -277,14 +407,29 @@ export class AuthService {
       throw createConflictError('Email is already verified');
     }
 
-    // Generate verification token
-    const verificationToken = 'implement-verification-token-generation';
+    // Generate new OTP and expiration
+    const otp = generateOTP(6);
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
+    // Generate new email verification token for magic link
+    const verificationToken = generateEmailVerificationToken({
+      userId: user._id.toString(),
+      email: user.email,
+    });
+
+    // Update user with new verification data
+    user.emailVerificationOTP = otp;
+    user.emailVerificationOTPExpires = otpExpires;
     user.emailVerificationToken = verificationToken;
     user.emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
     await user.save();
 
-    return verificationToken;
+    // Create magic link
+    const clientUrl = process.env['CLIENT_URL'] || 'http://localhost:5173';
+    const magicLink = `${clientUrl}/auth/verify-email?token=${verificationToken}`;
+
+    // Send verification email
+    await EmailService.sendVerificationEmail(user.email, user.firstName, otp, magicLink);
   }
 
   /**
@@ -307,55 +452,37 @@ export class AuthService {
    * Delete user account
    */
   static async deleteAccount(userId: string, currentPassword?: string): Promise<void> {
-    console.log('Attempting to delete account for user:', userId);
-
     // Find user with password
     const user = await User.findById(userId).select('+password');
     if (!user) {
-      console.log('User not found for deletion:', userId);
       throw createNotFoundError(ERROR_MESSAGES.USER_NOT_FOUND);
     }
-
-    console.log('User found for deletion:', user.email, 'Auth provider:', user.authProvider);
 
     // Check if user is OAuth user (doesn't need password verification)
     const isOAuthUser = user.authProvider !== 'local';
 
-    if (isOAuthUser) {
-      console.log('OAuth user detected, skipping password verification');
-    } else {
+    if (!isOAuthUser) {
       // Local user - verify current password
       if (!currentPassword) {
-        console.log('Password required for local user but not provided');
         throw createUnauthorizedError('Current password is required');
       }
 
       if (!user.password) {
-        console.log('Local user has no password set');
         throw createUnauthorizedError('Current password is incorrect');
       }
 
       const isCurrentPasswordValid = await comparePassword(currentPassword, user.password);
       if (!isCurrentPasswordValid) {
-        console.log('Password verification failed for user:', user.email);
         throw createUnauthorizedError('Current password is incorrect');
       }
-
-      console.log('Password verification successful for local user');
     }
-
-    console.log('Proceeding with account deletion');
 
     // Revoke all refresh tokens
     await this.logoutAll(userId);
-    console.log('All refresh tokens revoked');
 
     // Delete the user account
     const deletedUser = await User.findByIdAndDelete(userId);
-    if (deletedUser) {
-      console.log('User successfully deleted from database:', deletedUser.email);
-    } else {
-      console.log('User deletion failed - user not found');
+    if (!deletedUser) {
       throw createNotFoundError('User not found during deletion');
     }
   }

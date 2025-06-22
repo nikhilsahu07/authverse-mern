@@ -20,6 +20,8 @@ export interface IUser {
   isEmailVerified: boolean;
   emailVerificationToken?: string;
   emailVerificationExpires?: Date;
+  emailVerificationOTP?: string;
+  emailVerificationOTPExpires?: Date;
   passwordResetToken?: string;
   passwordResetExpires?: Date;
   lastLogin?: Date;

@@ -1,46 +1,34 @@
-import cors from 'cors';
-import { getEnvVar, isDevelopment } from '../utils/helpers.js';
+import type { CorsOptions } from 'cors';
+
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5173',
+  'https://authverse-mern-client.vercel.app',
+  'https://authverse-client.vercel.app',
+];
 
 /**
  * CORS configuration options
  */
-const corsOptions: cors.CorsOptions = {
+export const corsOptions: CorsOptions = {
   origin: (origin, callback) => {
-    const allowedOrigins = getEnvVar(
-      'ALLOWED_ORIGINS',
-      'http://localhost:5173,http://127.0.0.1:5173,https://authverse.vercel.app',
-    )
-      .split(',')
-      .map((origin) => origin.trim());
-
-    console.log('allowedOrigins', allowedOrigins);
-    console.log('origin', origin);
-
-    // Allow requests with no origin (like mobile apps or curl requests) in development
-    if (isDevelopment() && !origin) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) {
       callback(null, true);
       return;
     }
 
-    // In development, be more permissive
-    if (isDevelopment()) {
-      callback(null, true);
-      return;
-    }
-
-    if (allowedOrigins.includes(origin as string)) {
+    if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      callback(new Error(`Origin ${origin} not allowed by CORS policy`));
     }
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization', 'Cache-Control', 'Pragma'],
-  exposedHeaders: ['X-Total-Count', 'X-Page-Count'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  exposedHeaders: ['Set-Cookie'],
   maxAge: 86400, // 24 hours
-  optionsSuccessStatus: 200, // Some legacy browsers choke on 204
-  preflightContinue: false,
 };
-
-export default cors(corsOptions);

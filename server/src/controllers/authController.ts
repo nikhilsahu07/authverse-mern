@@ -52,12 +52,9 @@ export class AuthController {
     });
 
     res.status(HTTP_STATUS.CREATED).json(
-      createSuccessResponse(SUCCESS_MESSAGES.USER_REGISTERED, {
+      createSuccessResponse('Registration successful! Please check your email to verify your account.', {
         user: result.user.toJSON(),
-        tokens: {
-          accessToken: result.tokens.accessToken.token,
-          refreshToken: result.tokens.refreshToken.token,
-        },
+        requiresEmailVerification: true,
       }),
     );
   });
@@ -159,5 +156,47 @@ export class AuthController {
     await AuthService.deleteAccount(userId, currentPassword);
 
     res.status(HTTP_STATUS.OK).json(createSuccessResponse('Account deleted successfully'));
+  });
+
+  static verifyEmail = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const { token } = req.body;
+
+    const result = await AuthService.verifyEmail(token);
+
+    res.status(HTTP_STATUS.OK).json(
+      createSuccessResponse('Email verified successfully! You are now logged in.', {
+        user: result.user.toJSON(),
+        tokens: {
+          accessToken: result.tokens.accessToken.token,
+          refreshToken: result.tokens.refreshToken.token,
+        },
+      }),
+    );
+  });
+
+  static verifyEmailWithOTP = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const { email, otp } = req.body;
+
+    const result = await AuthService.verifyEmailWithOTP(email, otp);
+
+    res.status(HTTP_STATUS.OK).json(
+      createSuccessResponse('Email verified successfully! You are now logged in.', {
+        user: result.user.toJSON(),
+        tokens: {
+          accessToken: result.tokens.accessToken.token,
+          refreshToken: result.tokens.refreshToken.token,
+        },
+      }),
+    );
+  });
+
+  static resendEmailVerification = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const { email } = req.body;
+
+    await AuthService.resendEmailVerification(email);
+
+    res
+      .status(HTTP_STATUS.OK)
+      .json(createSuccessResponse('Verification email sent successfully! Please check your email.'));
   });
 }
