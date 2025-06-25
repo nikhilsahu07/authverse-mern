@@ -19,10 +19,41 @@ interface OAuthUser {
   };
 }
 
+// Extended request type for OAuth
+interface OAuthRequest extends Request {
+  user?: OAuthUser | IUserDocument;
+  session: any;
+}
+
 export class AuthController {
   // OAuth success callback handler
   static oauthSuccess = asyncHandler((req: Request, res: Response): void => {
-    const { user, tokens } = req.user as OAuthUser;
+    const oauthReq = req as OAuthRequest;
+
+    // Handle the OAuth result properly
+    let user: IUserDocument;
+    let tokens: { accessToken: { token: string }; refreshToken: { token: string } };
+
+    if (oauthReq.user && typeof oauthReq.user === 'object') {
+      // Check if it's the OAuth result object or just a user
+      if ('user' in oauthReq.user && 'tokens' in oauthReq.user) {
+        const { user: oauthUser, tokens: oauthTokens } = oauthReq.user;
+        user = oauthUser;
+        tokens = oauthTokens;
+
+        // Store tokens in session for later retrieval
+        oauthReq.session.oauthTokens = tokens;
+      } else {
+        // eslint-disable-next-line prefer-destructuring
+        user = oauthReq.user;
+
+        res.redirect(`${process.env['CLIENT_URL'] || 'http://localhost:5173'}/signin?error=oauth_failed`);
+        return;
+      }
+    } else {
+      res.redirect(`${process.env['CLIENT_URL'] || 'http://localhost:5173'}/signin?error=oauth_failed`);
+      return;
+    }
 
     if (!user || !tokens) {
       res.redirect(`${process.env['CLIENT_URL'] || 'http://localhost:5173'}/signin?error=oauth_failed`);

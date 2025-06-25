@@ -130,6 +130,37 @@ const handleOAuthAuth = async (
 
 // Configure Passport strategies
 export const configurePassport = (): void => {
+  // Serialize user for session storage
+  passport.serializeUser((user: any, done) => {
+    try {
+      // If user is the OAuth result object, extract the user
+      if (user?.user && user.tokens) {
+        done(null, user.user._id.toString());
+      } else if (user?._id) {
+        // If it's a user document directly
+        done(null, user._id.toString());
+      } else {
+        done(new Error('Invalid user object for serialization'), null);
+      }
+    } catch (error) {
+      done(error, null);
+    }
+  });
+
+  // Deserialize user from session
+  passport.deserializeUser(async (id: string, done) => {
+    try {
+      const user = await User.findById(id);
+      if (!user) {
+        done(new Error('User not found'), null);
+        return;
+      }
+      done(null, user);
+    } catch (error) {
+      done(error, null);
+    }
+  });
+
   // Google OAuth Strategy
   if (process.env['GOOGLE_CLIENT_ID'] && process.env['GOOGLE_CLIENT_SECRET']) {
     passport.use(
