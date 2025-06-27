@@ -1,18 +1,33 @@
-import React from 'react';
-import { ArrowLeft, Camera, LogOut, User } from 'lucide-react';
+import React, { useState } from 'react';
+import { ArrowLeft, Camera, Clock, LogOut, Mail, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ProfileInformation from '../components/profile/ProfileInformation';
 import SecuritySettings from '../components/profile/SecuritySettings';
 
 const ProfilePage: React.FC = () => {
-  const { user, logout, updateProfile, changePassword, updateProfileImage, deleteAccount } = useAuth();
+  const { user, logout, updateProfile, changePassword, updateProfileImage, deleteAccount, resendEmailVerification } =
+    useAuth();
+  const [isVerifyingEmail, setIsVerifyingEmail] = useState(false);
 
   const handleLogout = async () => {
     try {
       await logout();
     } catch (_error) {
       // Error is handled by the auth context (toast)
+    }
+  };
+
+  const handleVerifyEmail = async () => {
+    if (!user?.email || isVerifyingEmail) return;
+
+    try {
+      setIsVerifyingEmail(true);
+      await resendEmailVerification(user.email);
+    } catch (_error) {
+      // Error is handled by the auth context (toast)
+    } finally {
+      setIsVerifyingEmail(false);
     }
   };
 
@@ -86,7 +101,33 @@ const ProfilePage: React.FC = () => {
                   <h2 className="text-xl sm:text-2xl font-bold text-white">
                     {user.firstName} {user.lastName}
                   </h2>
-                  <p className="text-blue-100/70 text-sm sm:text-base">{user.email}</p>
+                  <div className="flex items-center space-x-3">
+                    <p className="text-blue-100/70 text-sm sm:text-base">{user.email}</p>
+                    {!user.isEmailVerified && (
+                      <button
+                        onClick={handleVerifyEmail}
+                        disabled={isVerifyingEmail}
+                        className="inline-flex items-center px-2 sm:px-3 py-1 sm:py-1.5 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 rounded-lg text-xs sm:text-sm font-medium text-amber-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500/50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isVerifyingEmail ? (
+                          <>
+                            <Clock className="w-3 h-3 sm:w-4 sm:h-4 mr-1 animate-spin" />
+                            Sending...
+                          </>
+                        ) : (
+                          <>
+                            <Mail className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                            Verify Email
+                          </>
+                        )}
+                      </button>
+                    )}
+                    {user.isEmailVerified && (
+                      <span className="inline-flex items-center px-2 sm:px-3 py-1 sm:py-1.5 bg-green-500/20 border border-green-400/50 rounded-lg text-xs sm:text-sm font-medium text-green-400">
+                        ✓ Verified
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
               <button
