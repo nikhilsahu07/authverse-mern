@@ -135,6 +135,7 @@ export class AuthService {
       profileImage: user.profileImage,
       isEmailVerified: user.isEmailVerified,
       isActive: user.isActive,
+      authProvider: user.authProvider,
       lastLogin: user.lastLogin?.toISOString(),
       createdAt: user.createdAt.toISOString(),
       updatedAt: user.updatedAt.toISOString(),
