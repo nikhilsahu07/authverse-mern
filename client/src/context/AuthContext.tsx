@@ -70,7 +70,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       toast.success('Welcome back!');
     } catch (error) {
+      console.error('AuthContext login error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Login failed';
+      console.error('Showing error toast:', errorMessage);
       toast.error(errorMessage);
       throw error;
     } finally {

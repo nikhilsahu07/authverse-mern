@@ -35,6 +35,8 @@ const SignIn = () => {
       navigate(from, { replace: true });
     } catch (_error) {
       // Error is handled by the auth context (toast)
+      console.error('Login error:', _error);
+    } finally {
       setIsSubmitting(false);
     }
   };
